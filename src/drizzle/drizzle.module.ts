@@ -3,6 +3,7 @@ import * as schema from './schemas/index';
 import { Pool } from 'pg';
 import { drizzle } from 'drizzle-orm/node-postgres';
 export const DrizzleProvider = 'DrizzleProvider';
+import 'dotenv/config';
 @Module({
   providers: [
     {
