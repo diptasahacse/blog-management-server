@@ -1,5 +1,6 @@
 import { Injectable, LoggerService as NestLoggerService } from '@nestjs/common';
 import { IErrorResponse } from '../types/common';
+import { DiscordNotificationService } from './discord-notification.service';
 
 export interface LogContext {
   correlationId?: string;
@@ -13,6 +14,9 @@ export interface LogContext {
 
 @Injectable()
 export class LoggerService implements NestLoggerService {
+  constructor(
+    private readonly discordNotificationService: DiscordNotificationService,
+  ) {}
   log(message: any, context?: string) {
     this.writeLog('LOG', message, context);
   }
@@ -59,6 +63,15 @@ export class LoggerService implements NestLoggerService {
     };
 
     console.error(JSON.stringify(logEntry, null, 2));
+
+    // Send Discord notification for internal server errors (5xx status codes)
+    if (error.statusCode >= 500) {
+      this.discordNotificationService
+        .sendErrorNotification(error, originalError, logContext)
+        .catch((discordError) => {
+          console.error('Failed to send Discord notification:', discordError);
+        });
+    }
   }
 
   private writeLog(
@@ -72,7 +85,8 @@ export class LoggerService implements NestLoggerService {
       timestamp,
       level,
       context,
-      message: typeof message === 'object' ? JSON.stringify(message) : message,
+      message:
+        typeof message === 'object' ? JSON.stringify(message) : String(message),
       ...(trace && { trace }),
     };
 

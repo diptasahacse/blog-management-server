@@ -41,16 +41,32 @@ export class AllExceptionsFilter implements ExceptionFilter {
 
     // Handle different types of exceptions
     if (exception instanceof HttpException) {
-      errorResponse = this.handleHttpException(exception, request.url, correlationId);
+      errorResponse = this.handleHttpException(
+        exception,
+        request.url,
+        correlationId,
+      );
       statusCode = exception.getStatus();
     } else if (exception instanceof DrizzleQueryError) {
-      const drizzleResult = handlerDrizzleQueryError(exception, request.url, correlationId);
+      const drizzleResult = handlerDrizzleQueryError(
+        exception,
+        request.url,
+        correlationId,
+      );
       statusCode = drizzleResult.statusCode;
       errorResponse = drizzleResult.errorResponse;
     } else if (exception instanceof Error) {
-      errorResponse = this.handleGenericError(exception, request.url, correlationId);
+      errorResponse = this.handleGenericError(
+        exception,
+        request.url,
+        correlationId,
+      );
     } else {
-      errorResponse = this.handleUnknownError(exception, request.url, correlationId);
+      errorResponse = this.handleUnknownError(
+        exception,
+        request.url,
+        correlationId,
+      );
     }
 
     // Log the error with context
@@ -75,7 +91,7 @@ export class AllExceptionsFilter implements ExceptionFilter {
       message = response;
     } else if (typeof response === 'object' && response !== null) {
       const errorResponse = response as any;
-      
+
       // Handle validation errors from class-validator
       if (Array.isArray(errorResponse.message)) {
         message = 'Validation failed';
@@ -122,18 +138,21 @@ export class AllExceptionsFilter implements ExceptionFilter {
   ): IErrorResponse {
     const errorResponse: IErrorResponse = {
       statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
-      message: process.env.NODE_ENV === 'production' 
-        ? 'Internal server error' 
-        : exception.message,
+      message:
+        process.env.NODE_ENV === 'production'
+          ? 'Internal server error'
+          : exception.message,
       error: this.getHttpStatusText(HttpStatus.INTERNAL_SERVER_ERROR),
       timestamp: new Date().toISOString(),
       path,
       correlationId,
-      errors: [{
-        path: 'server',
-        message: exception.message,
-        code: ErrorCodes.INTERNAL_SERVER_ERROR,
-      }],
+      errors: [
+        {
+          path: 'server',
+          message: exception.message,
+          code: ErrorCodes.INTERNAL_SERVER_ERROR,
+        },
+      ],
     };
 
     // Include stack trace in development mode
@@ -156,11 +175,13 @@ export class AllExceptionsFilter implements ExceptionFilter {
       timestamp: new Date().toISOString(),
       path,
       correlationId,
-      errors: [{
-        path: 'server',
-        message: 'Unknown error type',
-        code: ErrorCodes.INTERNAL_SERVER_ERROR,
-      }],
+      errors: [
+        {
+          path: 'server',
+          message: 'Unknown error type',
+          code: ErrorCodes.INTERNAL_SERVER_ERROR,
+        },
+      ],
     };
   }
 
