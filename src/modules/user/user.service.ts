@@ -173,4 +173,61 @@ export class UserService {
       throw error;
     }
   }
+
+  async findByEmail(email: string) {
+    try {
+      this.logger.log(`Fetching user with email: ${email}`, 'UserService');
+
+      const [user] = await this.db
+        .select()
+        .from(schema.UserTable)
+        .where(eq(schema.UserTable.email, email))
+        .limit(1);
+
+      return user || null;
+    } catch (error) {
+      this.logger.error(
+        `Failed to fetch user with email: ${email}`,
+        (error as Error).stack,
+        'UserService',
+      );
+      throw error;
+    }
+  }
+
+  async findById(id: string) {
+    return this.findOne(id);
+  }
+
+  async updatePassword(id: string, hashedPassword: string) {
+    try {
+      this.logger.log(
+        `Updating password for user with ID: ${id}`,
+        'UserService',
+      );
+
+      // First check if user exists
+      await this.findOne(id);
+
+      await this.db
+        .update(schema.UserTable)
+        .set({ password: hashedPassword, updatedAt: new Date() })
+        .where(eq(schema.UserTable.id, id));
+
+      this.logger.log(
+        `Password updated successfully for user with ID: ${id}`,
+        'UserService',
+      );
+    } catch (error) {
+      if (error instanceof ResourceNotFoundException) {
+        throw error;
+      }
+      this.logger.error(
+        `Failed to update password for user with ID: ${id}`,
+        (error as Error).stack,
+        'UserService',
+      );
+      throw error;
+    }
+  }
 }
