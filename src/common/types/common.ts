@@ -15,11 +15,18 @@ export interface IPagination {
 export interface IErrorItem {
   path: string | number;
   message: string;
+  code?: string;
 }
+
 export interface IErrorResponse {
+  statusCode: number;
   message: string;
-  errors: IErrorItem[];
+  error: string;
+  errors?: IErrorItem[];
   stack?: string;
+  timestamp: string;
+  path: string;
+  correlationId?: string;
 }
 
 export interface ICommonResponse<T> {
