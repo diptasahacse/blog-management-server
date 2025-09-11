@@ -3,6 +3,7 @@ import {
   ConflictException,
   Inject,
   Injectable,
+  NotFoundException,
   Query,
 } from '@nestjs/common';
 import { CreateCategoryDto } from './dto/create-category.dto';
@@ -64,8 +65,23 @@ export class CategoryService {
     };
   }
 
-  findOne(id: number) {
-    return `This action returns a #${id} category`;
+  async findOne(id: string) {
+    const [result] = await this.db
+      .select()
+      .from(schema.CategoryTable)
+      .where(sql`${schema.CategoryTable.id} = ${id}`)
+      .limit(1);
+    console.log(result);
+
+    if (!result) {
+      throw new NotFoundException({
+        message: 'Category not found',
+      });
+    }
+    return {
+      data: result,
+      message: 'Category fetched successfully',
+    };
   }
 
   update(id: number, updateCategoryDto: UpdateCategoryDto) {

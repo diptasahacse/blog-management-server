@@ -7,11 +7,14 @@ import {
   Param,
   Delete,
   Query,
+  ParseUUIDPipe,
+  BadRequestException,
+  NotFoundException,
 } from '@nestjs/common';
 import { CategoryService } from './category.service';
 import { CreateCategoryDto } from './dto/create-category.dto';
 import { UpdateCategoryDto } from './dto/update-category.dto';
-import { type IQueryOptions } from 'src/types/common';
+import { IErrorItem, type IQueryOptions } from 'src/types/common';
 
 @Controller('category')
 export class CategoryController {
@@ -28,8 +31,20 @@ export class CategoryController {
   }
 
   @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.categoryService.findOne(+id);
+  findOne(
+    @Param(
+      'id',
+      new ParseUUIDPipe({
+        exceptionFactory: () => {
+          return new NotFoundException({
+            message: 'Category not found',
+          });
+        },
+      }),
+    )
+    id: string,
+  ) {
+    return this.categoryService.findOne(id);
   }
 
   @Patch(':id')
