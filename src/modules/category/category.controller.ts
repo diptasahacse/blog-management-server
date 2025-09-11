@@ -1,19 +1,6 @@
-import {
-  Controller,
-  Get,
-  Post,
-  Body,
-  Patch,
-  Param,
-  Delete,
-  Query,
-  ParseUUIDPipe,
-  NotFoundException,
-} from '@nestjs/common';
+import { Controller, Post, Body, Param, Delete } from '@nestjs/common';
 import { CategoryService } from './category.service';
 import { CreateCategoryDto } from './dto/create-category.dto';
-import { UpdateCategoryDto } from './dto/update-category.dto';
-import { type IQueryOptions } from 'src/common/types/common';
 
 @Controller('category')
 export class CategoryController {
@@ -24,38 +11,38 @@ export class CategoryController {
     return this.categoryService.create(createCategoryDto);
   }
 
-  @Get()
-  findAll(@Query() query?: IQueryOptions) {
-    return this.categoryService.findAll(query);
-  }
+  // @Get()
+  // findAll(@Query() query?: IQueryOptions) {
+  //   return this.categoryService.findAll(query);
+  // }
 
-  @Get(':id')
-  findOne(
-    @Param(
-      'id',
-      new ParseUUIDPipe({
-        exceptionFactory: () => {
-          return new NotFoundException({
-            message: 'Category not found',
-          });
-        },
-      }),
-    )
-    id: string,
-  ) {
-    return this.categoryService.findOne(id);
-  }
+  // @Get(':id')
+  // findOne(
+  //   @Param(
+  //     'id',
+  //     new ParseUUIDPipe({
+  //       exceptionFactory: () => {
+  //         return new NotFoundException({
+  //           message: 'Category not found',
+  //         });
+  //       },
+  //     }),
+  //   )
+  //   id: string,
+  // ) {
+  //   return this.categoryService.findOne(id);
+  // }
 
-  @Patch(':id')
-  update(
-    @Param('id') id: string,
-    @Body() updateCategoryDto: UpdateCategoryDto,
-  ) {
-    return this.categoryService.update(+id, updateCategoryDto);
-  }
+  // @Patch(':id')
+  // update(
+  //   @Param('id') id: string,
+  //   @Body() updateCategoryDto: UpdateCategoryDto,
+  // ) {
+  //   return this.categoryService.update(+id, updateCategoryDto);
+  // }
 
   @Delete(':id')
   remove(@Param('id') id: string) {
-    return this.categoryService.remove(+id);
+    return this.categoryService.delete(+id);
   }
 }

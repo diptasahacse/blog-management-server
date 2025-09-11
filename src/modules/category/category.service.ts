@@ -1,91 +1,26 @@
-import {
-  BadRequestException,
-  Inject,
-  Injectable,
-  NotFoundException,
-} from '@nestjs/common';
-import { CreateCategoryDto } from './dto/create-category.dto';
-import { UpdateCategoryDto } from './dto/update-category.dto';
-import { DrizzleProvider } from 'src/drizzle/drizzle.module';
-import { NodePgDatabase } from 'drizzle-orm/node-postgres';
+import { Injectable } from '@nestjs/common';
+import { BaseService } from '../base/base.service';
+import { CategoryRepository } from './category.repository';
 import * as schema from 'src/drizzle/schemas';
-import { sql } from 'drizzle-orm';
-import { type IQueryOptions } from 'src/common/types/common';
-import { desc } from 'drizzle-orm';
 
 @Injectable()
-export class CategoryService {
-  constructor(
-    @Inject(DrizzleProvider) private readonly db: NodePgDatabase<typeof schema>,
-  ) {}
-  async create(createCategoryDto: CreateCategoryDto) {
-    const isExist = await this.db
-      .select()
-      .from(schema.CategoryTable)
-      .where(sql`${schema.CategoryTable.name} = ${createCategoryDto.name}`);
-
-    if (isExist.length) {
-      throw new BadRequestException({
-        message: 'Provided Category already exists',
-        errors: {
-          name: `${createCategoryDto.name} already exists`,
-        },
-      });
-    }
-
-    return await this.db
-      .insert(schema.CategoryTable)
-      .values(createCategoryDto)
-      .returning();
+export class CategoryService extends BaseService<
+  typeof schema.CategoryTable,
+  CategoryRepository
+> {
+  constructor(repository: CategoryRepository) {
+    super(repository);
   }
-
-  async findAll(queryData?: IQueryOptions) {
-    const { page = 1, limit = 10, ...query } = queryData ?? {};
-    const offset = (Number(page) - 1) * Number(limit);
-    // get total count
-    const totalResult = await this.db
-      .select({ count: sql<number>`count(*)` })
-      .from(schema.CategoryTable);
-    const total = Number(totalResult[0]?.count ?? 0);
-
-    return {
-      data: await this.db
-        .select()
-        .from(schema.CategoryTable)
-        .orderBy(desc(schema.CategoryTable.createdAt))
-        .limit(Number(limit))
-        .offset(offset),
-      pagination: {
-        total: total,
-        totalPages: Math.ceil(total / Number(limit)),
-      },
-    };
-  }
-
-  async findOne(id: string) {
-    const [result] = await this.db
-      .select()
-      .from(schema.CategoryTable)
-      .where(sql`${schema.CategoryTable.id} = ${id}`)
-      .limit(1);
-    console.log(result);
-
-    if (!result) {
-      throw new NotFoundException({
-        message: 'Category not found',
-      });
-    }
-    return {
-      data: result,
-      message: 'Category fetched successfully',
-    };
-  }
-
-  update(id: number, updateCategoryDto: UpdateCategoryDto) {
-    return `This action updates a #${id} category`;
-  }
-
-  remove(id: number) {
-    return `This action removes a #${id} category`;
-  }
+  // You can override methods here to add custom business logic
+  // For example, add custom validation or business rules specific to your app
+  // Override create if you need custom logic
+  // async create(createCategoryDto: CreateCategoryDto) {
+  //   // Add custom logic here before calling super
+  //   return super.create(createCategoryDto);
+  // }
+  // Add custom methods specific to categories
+  // async findBySlug(slug: string) {
+  //   // Custom method not in base class
+  //   return this.repository.findByName(slug); // This is just an example
+  // }
 }
