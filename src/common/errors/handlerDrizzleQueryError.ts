@@ -1,6 +1,6 @@
 import { DrizzleQueryError } from 'drizzle-orm';
 import { DatabaseError } from 'pg';
-import { IErrorResponse } from 'src/types/common';
+import { IErrorResponse } from 'src/common/types/common';
 
 const handlerDrizzleQueryError = (
   exception: DrizzleQueryError,

@@ -7,7 +7,7 @@ import {
 } from '@nestjs/common';
 // import { DrizzleQueryError } from 'drizzle-orm';
 import { Response } from 'express';
-import { IErrorItem, IErrorResponse } from 'src/types/common';
+import { IErrorItem, IErrorResponse } from 'src/common/types/common';
 // import handlerDrizzleQueryError from './errors/handlerDrizzleQueryError';
 import dotenv from 'dotenv';
 dotenv.config();

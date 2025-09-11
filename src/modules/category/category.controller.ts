@@ -8,13 +8,12 @@ import {
   Delete,
   Query,
   ParseUUIDPipe,
-  BadRequestException,
   NotFoundException,
 } from '@nestjs/common';
 import { CategoryService } from './category.service';
 import { CreateCategoryDto } from './dto/create-category.dto';
 import { UpdateCategoryDto } from './dto/update-category.dto';
-import { IErrorItem, type IQueryOptions } from 'src/types/common';
+import { type IQueryOptions } from 'src/common/types/common';
 
 @Controller('category')
 export class CategoryController {

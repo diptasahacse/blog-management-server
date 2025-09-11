@@ -1,19 +1,16 @@
 import {
   BadRequestException,
-  ConflictException,
   Inject,
   Injectable,
   NotFoundException,
-  Query,
 } from '@nestjs/common';
 import { CreateCategoryDto } from './dto/create-category.dto';
 import { UpdateCategoryDto } from './dto/update-category.dto';
 import { DrizzleProvider } from 'src/drizzle/drizzle.module';
 import { NodePgDatabase } from 'drizzle-orm/node-postgres';
 import * as schema from 'src/drizzle/schemas';
-import { asc, eq, sql } from 'drizzle-orm';
-import { type IQueryOptions } from 'src/types/common';
-import { CategoryFilterEnum } from './category.filter.enum';
+import { sql } from 'drizzle-orm';
+import { type IQueryOptions } from 'src/common/types/common';
 import { desc } from 'drizzle-orm';
 
 @Injectable()
