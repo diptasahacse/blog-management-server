@@ -14,6 +14,20 @@ import { LoggerService } from './services/logger.service';
 import { CorrelationIdGenerator } from './utils/correlation-id.util';
 import { ErrorCodes } from './enums/error-codes.enum';
 
+interface ValidationError {
+  property: string;
+  value?: unknown;
+  constraints?: Record<string, string>;
+  message?: string;
+}
+
+interface HttpExceptionResponse {
+  message?: string | string[];
+  errors?: ValidationError[];
+  error?: string;
+  statusCode?: number;
+}
+
 @Injectable()
 @Catch()
 export class AllExceptionsFilter implements ExceptionFilter {
@@ -90,7 +104,7 @@ export class AllExceptionsFilter implements ExceptionFilter {
     if (typeof response === 'string') {
       message = response;
     } else if (typeof response === 'object' && response !== null) {
-      const errorResponse = response as any;
+      const errorResponse = response as HttpExceptionResponse;
 
       // Handle validation errors from class-validator
       if (Array.isArray(errorResponse.message)) {
@@ -100,13 +114,28 @@ export class AllExceptionsFilter implements ExceptionFilter {
           message: msg,
           code: ErrorCodes.VALIDATION_FAILED,
         }));
+      } else if (errorResponse.errors && Array.isArray(errorResponse.errors)) {
+        message = 'Validation failed';
+        errors = errorResponse.errors.flatMap((error: ValidationError) => {
+          if (error.constraints) {
+            return Object.values(error.constraints).map(
+              (constraint: string) => ({
+                path: error.property,
+                message: constraint,
+                code: ErrorCodes.VALIDATION_FAILED,
+              }),
+            );
+          }
+          return [
+            {
+              path: error.property || 'validation',
+              message: error.message || 'Validation failed',
+              code: ErrorCodes.VALIDATION_FAILED,
+            },
+          ];
+        });
       } else if (errorResponse.message) {
         message = errorResponse.message;
-      }
-
-      // Handle custom error responses
-      if (errorResponse.errors && Array.isArray(errorResponse.errors)) {
-        errors = errorResponse.errors;
       }
     }
 
