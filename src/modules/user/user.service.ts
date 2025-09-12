@@ -4,18 +4,7 @@ import { UpdateUserDto } from './dto/update-user.dto';
 import { FindUsersDto, UserSortField } from './dto/find-users.dto';
 import { DrizzleProvider } from 'src/core/database';
 import { NodePgDatabase } from 'drizzle-orm/node-postgres';
-import {
-  eq,
-  and,
-  or,
-  gte,
-  lte,
-  count,
-  ilike,
-  desc,
-  asc,
-  SQL,
-} from 'drizzle-orm';
+import { eq, count, desc, asc, SQL } from 'drizzle-orm';
 import * as schema from 'src/core/database/schemas';
 import { LoggerService } from 'src/shared/services';
 import { ICommonResponse, IPagination } from 'src/shared/types';
@@ -23,6 +12,10 @@ import {
   ResourceNotFoundException,
   BusinessLogicException,
 } from 'src/shared/exceptions';
+import {
+  DynamicFilterBuilder,
+  FilterCondition,
+} from 'src/shared/utils/dynamic-filter-builder';
 
 @Injectable()
 export class UserService {
@@ -162,63 +155,67 @@ export class UserService {
   }
 
   private buildWhereConditions(filters: FindUsersDto): SQL | undefined {
-    const conditions: SQL[] = [];
+    const filterBuilder = new DynamicFilterBuilder();
 
     // Global search across name and email
     if (filters.search) {
-      const searchCondition = or(
-        ilike(schema.UserTable.name, `%${filters.search}%`),
-        ilike(schema.UserTable.email, `%${filters.search}%`),
-      );
-      if (searchCondition) {
-        conditions.push(searchCondition);
-      }
+      filterBuilder.addSearch({
+        fields: [schema.UserTable.name, schema.UserTable.email],
+        value: filters.search,
+        operator: 'ilike',
+      });
     }
 
-    // Specific field filters
-    if (filters.id) {
-      conditions.push(eq(schema.UserTable.id, filters.id));
-    }
+    // Build filter conditions array
+    const conditions: FilterCondition[] = [
+      {
+        field: schema.UserTable.id,
+        operator: 'eq',
+        value: filters.id,
+      },
+      {
+        field: schema.UserTable.name,
+        operator: 'ilike',
+        value: filters.name,
+        pattern: '%value%',
+      },
+      {
+        field: schema.UserTable.email,
+        operator: 'ilike',
+        value: filters.email,
+        pattern: '%value%',
+      },
+      {
+        field: schema.UserTable.role,
+        operator: 'eq',
+        value: filters.role,
+      },
+      {
+        field: schema.UserTable.createdAt,
+        operator: 'gte',
+        value: filters.createdFrom ? new Date(filters.createdFrom) : undefined,
+      },
+      {
+        field: schema.UserTable.createdAt,
+        operator: 'lte',
+        value: filters.createdTo ? new Date(filters.createdTo) : undefined,
+      },
+      {
+        field: schema.UserTable.updatedAt,
+        operator: 'gte',
+        value: filters.updatedFrom ? new Date(filters.updatedFrom) : undefined,
+      },
+      {
+        field: schema.UserTable.updatedAt,
+        operator: 'lte',
+        value: filters.updatedTo ? new Date(filters.updatedTo) : undefined,
+      },
+    ];
 
-    if (filters.name) {
-      conditions.push(ilike(schema.UserTable.name, `%${filters.name}%`));
-    }
+    // Add all conditions to the filter builder
+    filterBuilder.addConditions(conditions);
 
-    if (filters.email) {
-      conditions.push(ilike(schema.UserTable.email, `%${filters.email}%`));
-    }
-
-    if (filters.role) {
-      conditions.push(eq(schema.UserTable.role, filters.role));
-    }
-
-    // Date range filters
-    if (filters.createdFrom) {
-      conditions.push(
-        gte(schema.UserTable.createdAt, new Date(filters.createdFrom)),
-      );
-    }
-
-    if (filters.createdTo) {
-      conditions.push(
-        lte(schema.UserTable.createdAt, new Date(filters.createdTo)),
-      );
-    }
-
-    if (filters.updatedFrom) {
-      conditions.push(
-        gte(schema.UserTable.updatedAt, new Date(filters.updatedFrom)),
-      );
-    }
-
-    if (filters.updatedTo) {
-      conditions.push(
-        lte(schema.UserTable.updatedAt, new Date(filters.updatedTo)),
-      );
-    }
-
-    // Return combined conditions or undefined if no conditions
-    return conditions.length > 0 ? and(...conditions) : undefined;
+    return filterBuilder.build();
   }
 
   private buildOrderByClause(filters: FindUsersDto) {
