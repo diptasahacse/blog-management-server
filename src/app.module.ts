@@ -2,8 +2,8 @@ import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
-import { DrizzleModule } from './drizzle/drizzle.module';
-import { CommonModule } from './common/common.module';
+import { DrizzleModule } from './core/database';
+import { SharedModule } from './shared/shared.module';
 import modules from './modules';
 
 @Module({
@@ -12,7 +12,7 @@ import modules from './modules';
       isGlobal: true,
       envFilePath: '.env',
     }),
-    CommonModule,
+    SharedModule,
     DrizzleModule,
     ...modules,
   ],

@@ -8,11 +8,11 @@ import {
 } from '@nestjs/common';
 import { DrizzleQueryError } from 'drizzle-orm';
 import { Request, Response } from 'express';
-import { IErrorItem, IErrorResponse } from 'src/common/types/common';
-import handlerDrizzleQueryError from './errors/handlerDrizzleQueryError';
-import { LoggerService } from './services/logger.service';
-import { CorrelationIdGenerator } from './utils/correlation-id.util';
-import { ErrorCodes } from './enums/error-codes.enum';
+import { IErrorItem, IErrorResponse } from '../types/common';
+import handlerDrizzleQueryError from '../exceptions/handlerDrizzleQueryError';
+import { LoggerService } from '../services/logger.service';
+import { CorrelationIdGenerator } from '../utils/correlation-id.util';
+import { ErrorCodes } from '../enums/error-codes.enum';
 
 interface ValidationError {
   property: string;

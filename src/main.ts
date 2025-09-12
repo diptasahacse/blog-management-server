@@ -2,8 +2,8 @@ import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
 import { ValidationPipe, HttpException, HttpStatus } from '@nestjs/common';
 import { ValidationError } from 'class-validator';
-import { AllExceptionsFilter } from './common/all-exceptions.filter';
-import { LoggerService } from './common/services/logger.service';
+import { AllExceptionsFilter } from './shared/filters';
+import { LoggerService } from './shared/services';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);

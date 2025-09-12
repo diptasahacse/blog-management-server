@@ -1,15 +1,15 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
-import { DrizzleProvider } from 'src/drizzle/drizzle.module';
+import { DrizzleProvider } from 'src/core/database';
 import { NodePgDatabase } from 'drizzle-orm/node-postgres';
 import { eq } from 'drizzle-orm';
-import * as schema from 'src/drizzle/schemas';
-import { LoggerService } from 'src/common/services/logger.service';
+import * as schema from 'src/core/database/schemas';
+import { LoggerService } from 'src/shared/services';
 import {
   ResourceNotFoundException,
   BusinessLogicException,
-} from 'src/common/exceptions/custom.exceptions';
+} from 'src/shared/exceptions';
 
 @Injectable()
 export class UserService {

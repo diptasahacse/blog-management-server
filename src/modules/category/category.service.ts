@@ -1,7 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { BaseService } from '../base/base.service';
 import { CategoryRepository } from './category.repository';
-import * as schema from 'src/drizzle/schemas';
+import * as schema from 'src/core/database/schemas';
 
 @Injectable()
 export class CategoryService extends BaseService<

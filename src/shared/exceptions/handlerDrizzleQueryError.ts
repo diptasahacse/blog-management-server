@@ -1,6 +1,6 @@
 import { DrizzleQueryError } from 'drizzle-orm';
 import { DatabaseError } from 'pg';
-import { IErrorResponse, IErrorItem } from 'src/common/types/common';
+import { IErrorResponse, IErrorItem } from '../types/common';
 import { ErrorCodes } from '../enums/error-codes.enum';
 import { HttpStatus } from '@nestjs/common';
 

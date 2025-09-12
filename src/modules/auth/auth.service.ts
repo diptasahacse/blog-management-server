@@ -15,10 +15,7 @@ import {
   JwtPayload,
   TokenPair,
 } from './interfaces/auth.interface';
-import {
-  ConflictChecker,
-  UniqueField,
-} from '../../common/utils/conflict-checker.util';
+import { ConflictChecker, UniqueField } from '../../shared/utils';
 
 interface User {
   id: string;

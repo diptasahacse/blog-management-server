@@ -1,9 +1,9 @@
 import { Injectable, Inject } from '@nestjs/common';
 import { NodePgDatabase } from 'drizzle-orm/node-postgres';
 import { sql, eq } from 'drizzle-orm';
-import * as schema from 'src/drizzle/schemas';
-import { DrizzleProvider } from 'src/drizzle/drizzle.module';
-import { CategoryTable } from 'src/drizzle/schemas/category.schema';
+import * as schema from 'src/core/database/schemas';
+import { DrizzleProvider } from 'src/core/database';
+import { CategoryTable } from 'src/core/database/schemas/category.schema';
 import { BaseRepository } from '../base/base.repository';
 
 export interface IFindOptions {

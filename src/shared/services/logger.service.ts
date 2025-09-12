@@ -9,7 +9,7 @@ export interface LogContext {
   url?: string;
   userAgent?: string;
   ip?: string;
-  [key: string]: any;
+  [key: string]: string | number | boolean | undefined;
 }
 
 @Injectable()
@@ -17,15 +17,15 @@ export class LoggerService implements NestLoggerService {
   constructor(
     private readonly discordNotificationService: DiscordNotificationService,
   ) {}
-  log(message: any, context?: string) {
+  log(message: string, context?: string) {
     this.writeLog('LOG', message, context);
   }
 
-  error(message: any, trace?: string, context?: string) {
+  error(message: string, trace?: string, context?: string) {
     this.writeLog('ERROR', message, context, trace);
   }
 
-  warn(message: any, context?: string) {
+  warn(message: string, context?: string) {
     this.writeLog('WARN', message, context);
   }
 
@@ -76,7 +76,7 @@ export class LoggerService implements NestLoggerService {
 
   private writeLog(
     level: string,
-    message: any,
+    message: string,
     context?: string,
     trace?: string,
   ) {
@@ -85,8 +85,7 @@ export class LoggerService implements NestLoggerService {
       timestamp,
       level,
       context,
-      message:
-        typeof message === 'object' ? JSON.stringify(message) : String(message),
+      message,
       ...(trace && { trace }),
     };
 
