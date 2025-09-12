@@ -16,6 +16,7 @@ import {
   DynamicFilterBuilder,
   FilterCondition,
 } from 'src/shared/utils/dynamic-filter-builder';
+import { FilterOperatorEnum } from 'src/shared/enums/dynamic-filter-builder.enum';
 
 @Injectable()
 export class UserService {
@@ -162,7 +163,7 @@ export class UserService {
       filterBuilder.addSearch({
         fields: [schema.UserTable.name, schema.UserTable.email],
         value: filters.search,
-        operator: 'ilike',
+        operator: FilterOperatorEnum.ILIKE,
       });
     }
 
@@ -170,44 +171,44 @@ export class UserService {
     const conditions: FilterCondition[] = [
       {
         field: schema.UserTable.id,
-        operator: 'eq',
+        operator: FilterOperatorEnum.EQUAL,
         value: filters.id,
       },
       {
         field: schema.UserTable.name,
-        operator: 'ilike',
+        operator: FilterOperatorEnum.ILIKE,
         value: filters.name,
         pattern: '%value%',
       },
       {
         field: schema.UserTable.email,
-        operator: 'ilike',
+        operator: FilterOperatorEnum.ILIKE,
         value: filters.email,
         pattern: '%value%',
       },
       {
         field: schema.UserTable.role,
-        operator: 'eq',
+        operator: FilterOperatorEnum.EQUAL,
         value: filters.role,
       },
       {
         field: schema.UserTable.createdAt,
-        operator: 'gte',
+        operator: FilterOperatorEnum.GREATER_THAN_OR_EQUAL,
         value: filters.createdFrom ? new Date(filters.createdFrom) : undefined,
       },
       {
         field: schema.UserTable.createdAt,
-        operator: 'lte',
+        operator: FilterOperatorEnum.LESS_THAN_OR_EQUAL,
         value: filters.createdTo ? new Date(filters.createdTo) : undefined,
       },
       {
         field: schema.UserTable.updatedAt,
-        operator: 'gte',
+        operator: FilterOperatorEnum.GREATER_THAN_OR_EQUAL,
         value: filters.updatedFrom ? new Date(filters.updatedFrom) : undefined,
       },
       {
         field: schema.UserTable.updatedAt,
-        operator: 'lte',
+        operator: FilterOperatorEnum.LESS_THAN_OR_EQUAL,
         value: filters.updatedTo ? new Date(filters.updatedTo) : undefined,
       },
     ];
