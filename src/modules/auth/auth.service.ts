@@ -1,7 +1,6 @@
 import {
   Injectable,
   UnauthorizedException,
-  ConflictException,
   BadRequestException,
 } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
@@ -16,6 +15,10 @@ import {
   JwtPayload,
   TokenPair,
 } from './interfaces/auth.interface';
+import {
+  ConflictChecker,
+  UniqueField,
+} from '../../common/utils/conflict-checker.util';
 
 interface User {
   id: string;
@@ -36,20 +39,45 @@ export class AuthService {
   async register(registerDto: RegisterDto): Promise<AuthResponse> {
     const { email, password, name, role } = registerDto;
 
-    // Check if user already exists
-    const existingUser = await this.userService.findByEmail(email);
-    if (existingUser) {
-      throw new ConflictException({
+    // Define unique fields to check
+    const uniqueFields: UniqueField[] = [
+      {
+        field: 'email',
+        value: email,
         message: 'User with this email already exists',
-        errors: [
-          {
-            property: 'email',
-            value: email,
-            message: 'User with this email already exists',
-          },
-        ],
-      });
-    }
+      },
+      // You can easily add more unique fields here:
+      {
+        field: 'username',
+        value: name,
+        message: 'Username is already taken',
+      },
+      // {
+      //   field: 'phone',
+      //   value: phone,
+      //   message: 'Phone number is already registered',
+      // },
+    ];
+
+    // Define corresponding check functions
+    const checkFunctions = [
+      async (emailValue: string) => {
+        const existingUser = await this.userService.findByEmail(emailValue);
+        return !!existingUser;
+      },
+      // Add more check functions for other unique fields:
+      // async (usernameValue: string) => {
+      //   const existingUser = await this.userService.findByUsername(usernameValue);
+      //   return !!existingUser;
+      // },
+      // async (phoneValue: string) => {
+      //   const existingUser = await this.userService.findByPhone(phoneValue);
+      //   return !!existingUser;
+      // },
+    ];
+
+    // Check for conflicts and throw if any exist
+    await ConflictChecker.checkAndThrowConflicts(uniqueFields, checkFunctions);
 
     // Hash password
     const saltRounds = 12;
