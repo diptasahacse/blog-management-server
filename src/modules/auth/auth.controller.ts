@@ -1,12 +1,4 @@
-import {
-  Controller,
-  Post,
-  Body,
-  UseGuards,
-  Request,
-  Get,
-  Patch,
-} from '@nestjs/common';
+import { Controller, Post, Body, UseGuards, Get, Patch } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
@@ -17,6 +9,12 @@ import { JwtAuthGuard } from './guards/jwt-auth.guard';
 import { RolesGuard } from './guards/roles.guard';
 import { GetUser } from './decorators/get-user.decorator';
 import { Roles } from './decorators/roles.decorator';
+
+interface AuthenticatedUser {
+  id: string;
+  email: string;
+  role: string;
+}
 
 @Controller('auth')
 export class AuthController {
@@ -29,7 +27,7 @@ export class AuthController {
 
   @UseGuards(LocalAuthGuard)
   @Post('login')
-  async login(@Body() loginDto: LoginDto, @Request() req: any) {
+  async login(@Body() loginDto: LoginDto) {
     return this.authService.login(loginDto);
   }
 
@@ -40,7 +38,7 @@ export class AuthController {
 
   @UseGuards(JwtAuthGuard)
   @Get('profile')
-  async getProfile(@GetUser() user: any) {
+  getProfile(@GetUser() user: AuthenticatedUser) {
     return {
       id: user.id,
       email: user.email,
@@ -51,7 +49,7 @@ export class AuthController {
   @UseGuards(JwtAuthGuard)
   @Patch('change-password')
   async changePassword(
-    @GetUser() user: any,
+    @GetUser() user: AuthenticatedUser,
     @Body() changePasswordDto: ChangePasswordDto,
   ) {
     return this.authService.changePassword(user.id, changePasswordDto);
@@ -60,7 +58,7 @@ export class AuthController {
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('admin')
   @Get('admin-only')
-  async adminOnly() {
+  adminOnly() {
     return { message: 'This is an admin-only endpoint!' };
   }
 }

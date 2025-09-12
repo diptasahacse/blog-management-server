@@ -21,9 +21,15 @@ interface ValidationError {
   message?: string;
 }
 
+interface ConflictError {
+  property: string;
+  value?: unknown;
+  message: string;
+}
+
 interface HttpExceptionResponse {
   message?: string | string[];
-  errors?: ValidationError[];
+  errors?: ValidationError[] | ConflictError[];
   error?: string;
   statusCode?: number;
 }
@@ -115,25 +121,41 @@ export class AllExceptionsFilter implements ExceptionFilter {
           code: ErrorCodes.VALIDATION_FAILED,
         }));
       } else if (errorResponse.errors && Array.isArray(errorResponse.errors)) {
-        message = 'Validation failed';
-        errors = errorResponse.errors.flatMap((error: ValidationError) => {
-          if (error.constraints) {
-            return Object.values(error.constraints).map(
-              (constraint: string) => ({
-                path: error.property,
-                message: constraint,
+        // Check if this is a validation error or conflict error
+        const firstError = errorResponse.errors[0];
+        if ('constraints' in firstError && firstError.constraints) {
+          // This is a validation error
+          message = 'Validation failed';
+          errors = errorResponse.errors.flatMap((error: ValidationError) => {
+            if (error.constraints) {
+              return Object.values(error.constraints).map(
+                (constraint: string) => ({
+                  path: error.property,
+                  message: constraint,
+                  code: ErrorCodes.VALIDATION_FAILED,
+                }),
+              );
+            }
+            return [
+              {
+                path: error.property || 'validation',
+                message: error.message || 'Validation failed',
                 code: ErrorCodes.VALIDATION_FAILED,
-              }),
-            );
-          }
-          return [
-            {
-              path: error.property || 'validation',
-              message: error.message || 'Validation failed',
-              code: ErrorCodes.VALIDATION_FAILED,
-            },
-          ];
-        });
+              },
+            ];
+          });
+        } else {
+          // This is likely a conflict error or other custom error
+          message = (errorResponse.message as string) || 'Error occurred';
+          errors = errorResponse.errors.map((error: ConflictError) => ({
+            path: error.property,
+            message: error.message,
+            code:
+              status === 409
+                ? ErrorCodes.DUPLICATE_ENTRY
+                : ErrorCodes.INVALID_INPUT,
+          }));
+        }
       } else if (errorResponse.message) {
         message = errorResponse.message;
       }

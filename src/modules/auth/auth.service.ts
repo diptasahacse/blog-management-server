@@ -17,6 +17,14 @@ import {
   TokenPair,
 } from './interfaces/auth.interface';
 
+interface User {
+  id: string;
+  email: string;
+  name: string;
+  role: string;
+  password?: string;
+}
+
 @Injectable()
 export class AuthService {
   constructor(
@@ -31,7 +39,16 @@ export class AuthService {
     // Check if user already exists
     const existingUser = await this.userService.findByEmail(email);
     if (existingUser) {
-      throw new ConflictException('User with this email already exists');
+      throw new ConflictException({
+        message: 'User with this email already exists',
+        errors: [
+          {
+            property: 'email',
+            value: email,
+            message: 'User with this email already exists',
+          },
+        ],
+      });
     }
 
     // Hash password
@@ -81,18 +98,19 @@ export class AuthService {
     };
   }
 
-  async validateUser(email: string, password: string): Promise<any> {
+  async validateUser(email: string, password: string): Promise<User | null> {
     const user = await this.userService.findByEmail(email);
     if (user && (await bcrypt.compare(password, user.password))) {
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
       const { password: _, ...result } = user;
-      return result;
+      return result as User;
     }
     return null;
   }
 
   async refreshTokens(refreshToken: string): Promise<TokenPair> {
     try {
-      const payload = this.jwtService.verify(refreshToken, {
+      const payload: JwtPayload = this.jwtService.verify(refreshToken, {
         secret: this.configService.get<string>('JWT_REFRESH_SECRET'),
       });
 
