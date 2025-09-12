@@ -110,14 +110,16 @@ export class DiscordNotificationService {
     originalError: Error,
     logContext: LogContext,
   ): DiscordEmbed {
-    const isInternalError = error.statusCode >= 500;
+    const isInternalError =
+      originalError.name === 'InternalServerError' ||
+      error.error.includes('Internal');
     const color = isInternalError ? 0xff0000 : 0xff9900; // Red for 5xx, Orange for 4xx
     const emoji = isInternalError ? '💥' : '⚠️';
 
     const fields: DiscordEmbedField[] = [
       {
-        name: 'Status Code',
-        value: error.statusCode.toString(),
+        name: 'Error Type',
+        value: error.error,
         inline: true,
       },
       {
@@ -131,14 +133,6 @@ export class DiscordNotificationService {
         inline: true,
       },
     ];
-
-    if (error.correlationId) {
-      fields.push({
-        name: 'Correlation ID',
-        value: error.correlationId,
-        inline: true,
-      });
-    }
 
     if (logContext.ip) {
       fields.push({

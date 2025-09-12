@@ -1,5 +1,4 @@
 import { ConflictException } from '@nestjs/common';
-import { ErrorCodes } from '../enums/error-codes.enum';
 
 export interface UniqueField<T = string | number> {
   field: string;
@@ -26,7 +25,6 @@ export class ConflictChecker {
       property: field.field,
       value: field.value,
       message: field.message || `${field.field} already exists`,
-      code: ErrorCodes.DUPLICATE_ENTRY,
     }));
 
     const message =

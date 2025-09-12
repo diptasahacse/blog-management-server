@@ -36,7 +36,6 @@ const PG_ERROR_MAPPINGS: Record<string, DrizzleErrorMapping> = {
 const handlerDrizzleQueryError = (
   exception: DrizzleQueryError,
   path: string = '',
-  correlationId?: string,
 ): { statusCode: number; errorResponse: IErrorResponse } => {
   const pgError = exception.cause as DatabaseError | undefined;
   const code = pgError?.code;
@@ -60,7 +59,6 @@ const handlerDrizzleQueryError = (
       errors.push({
         path: field,
         message: `Duplicate value for ${field}`,
-        code: mapping.errorCode,
       });
     }
   } else if (code === '23503' && pgError?.detail) {
@@ -71,7 +69,6 @@ const handlerDrizzleQueryError = (
       errors.push({
         path: field,
         message: `Referenced ${field} does not exist`,
-        code: mapping.errorCode,
       });
     }
   } else if (code === '23502' && pgError?.column) {
@@ -79,7 +76,6 @@ const handlerDrizzleQueryError = (
     errors.push({
       path: pgError.column,
       message: `${pgError.column} is required`,
-      code: mapping.errorCode,
     });
   }
 
@@ -88,18 +84,15 @@ const handlerDrizzleQueryError = (
     errors.push({
       path: 'database',
       message: specificMessage,
-      code: mapping.errorCode,
     });
   }
 
   const errorResponse: IErrorResponse = {
-    statusCode: mapping.statusCode,
     message: specificMessage,
     error: getHttpStatusText(mapping.statusCode),
     errors,
     timestamp: new Date().toISOString(),
     path,
-    ...(correlationId && { correlationId }),
   };
 
   // Include stack trace in development mode

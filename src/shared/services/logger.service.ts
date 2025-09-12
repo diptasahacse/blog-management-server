@@ -29,13 +29,13 @@ export class LoggerService implements NestLoggerService {
     this.writeLog('WARN', message, context);
   }
 
-  debug(message: any, context?: string) {
+  debug(message: string, context?: string) {
     if (process.env.NODE_ENV === 'development') {
       this.writeLog('DEBUG', message, context);
     }
   }
 
-  verbose(message: any, context?: string) {
+  verbose(message: string, context?: string) {
     if (process.env.NODE_ENV === 'development') {
       this.writeLog('VERBOSE', message, context);
     }
@@ -49,10 +49,8 @@ export class LoggerService implements NestLoggerService {
     const logEntry = {
       timestamp: new Date().toISOString(),
       level: 'ERROR',
-      statusCode: error.statusCode,
+      errorType: error.error,
       message: error.message,
-      error: error.error,
-      correlationId: error.correlationId,
       path: error.path,
       context: logContext,
       originalErrorMessage: originalError.message,
@@ -64,8 +62,11 @@ export class LoggerService implements NestLoggerService {
 
     console.error(JSON.stringify(logEntry, null, 2));
 
-    // Send Discord notification for internal server errors (5xx status codes)
-    if (error.statusCode >= 500) {
+    // Send Discord notification for internal server errors
+    if (
+      error.error.includes('Internal') ||
+      originalError.name === 'InternalServerError'
+    ) {
       this.discordNotificationService
         .sendErrorNotification(error, originalError, logContext)
         .catch((discordError) => {

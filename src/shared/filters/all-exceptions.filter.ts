@@ -44,7 +44,7 @@ export class AllExceptionsFilter implements ExceptionFilter {
     const response = ctx.getResponse<Response>();
     const request = ctx.getRequest<Request>();
 
-    // Generate correlation ID for request tracking
+    // Generate correlation ID for logging only
     const correlationId = CorrelationIdGenerator.generate();
 
     // Extract request information for logging
@@ -61,32 +61,16 @@ export class AllExceptionsFilter implements ExceptionFilter {
 
     // Handle different types of exceptions
     if (exception instanceof HttpException) {
-      errorResponse = this.handleHttpException(
-        exception,
-        request.url,
-        correlationId,
-      );
+      errorResponse = this.handleHttpException(exception, request.url);
       statusCode = exception.getStatus();
     } else if (exception instanceof DrizzleQueryError) {
-      const drizzleResult = handlerDrizzleQueryError(
-        exception,
-        request.url,
-        correlationId,
-      );
+      const drizzleResult = handlerDrizzleQueryError(exception, request.url);
       statusCode = drizzleResult.statusCode;
       errorResponse = drizzleResult.errorResponse;
     } else if (exception instanceof Error) {
-      errorResponse = this.handleGenericError(
-        exception,
-        request.url,
-        correlationId,
-      );
+      errorResponse = this.handleGenericError(exception, request.url);
     } else {
-      errorResponse = this.handleUnknownError(
-        exception,
-        request.url,
-        correlationId,
-      );
+      errorResponse = this.handleUnknownError(exception, request.url);
     }
 
     // Log the error with context
@@ -99,7 +83,6 @@ export class AllExceptionsFilter implements ExceptionFilter {
   private handleHttpException(
     exception: HttpException,
     path: string,
-    correlationId: string,
   ): IErrorResponse {
     const status = exception.getStatus();
     const response = exception.getResponse();
@@ -132,7 +115,6 @@ export class AllExceptionsFilter implements ExceptionFilter {
                 (constraint: string) => ({
                   path: error.property,
                   message: constraint,
-                  code: ErrorCodes.VALIDATION_FAILED,
                 }),
               );
             }
@@ -140,7 +122,6 @@ export class AllExceptionsFilter implements ExceptionFilter {
               {
                 path: error.property || 'validation',
                 message: error.message || 'Validation failed',
-                code: ErrorCodes.VALIDATION_FAILED,
               },
             ];
           });
@@ -150,10 +131,6 @@ export class AllExceptionsFilter implements ExceptionFilter {
           errors = errorResponse.errors.map((error: ConflictError) => ({
             path: error.property,
             message: error.message,
-            code:
-              status === 409
-                ? ErrorCodes.DUPLICATE_ENTRY
-                : ErrorCodes.INVALID_INPUT,
           }));
         }
       } else if (errorResponse.message) {
@@ -162,12 +139,10 @@ export class AllExceptionsFilter implements ExceptionFilter {
     }
 
     const errorResponse: IErrorResponse = {
-      statusCode: status,
       message,
       error: this.getHttpStatusText(status),
       timestamp: new Date().toISOString(),
       path,
-      correlationId,
     };
 
     if (errors.length > 0) {
@@ -182,13 +157,8 @@ export class AllExceptionsFilter implements ExceptionFilter {
     return errorResponse;
   }
 
-  private handleGenericError(
-    exception: Error,
-    path: string,
-    correlationId: string,
-  ): IErrorResponse {
+  private handleGenericError(exception: Error, path: string): IErrorResponse {
     const errorResponse: IErrorResponse = {
-      statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
       message:
         process.env.NODE_ENV === 'production'
           ? 'Internal server error'
@@ -196,12 +166,10 @@ export class AllExceptionsFilter implements ExceptionFilter {
       error: this.getHttpStatusText(HttpStatus.INTERNAL_SERVER_ERROR),
       timestamp: new Date().toISOString(),
       path,
-      correlationId,
       errors: [
         {
           path: 'server',
           message: exception.message,
-          code: ErrorCodes.INTERNAL_SERVER_ERROR,
         },
       ],
     };
@@ -214,23 +182,16 @@ export class AllExceptionsFilter implements ExceptionFilter {
     return errorResponse;
   }
 
-  private handleUnknownError(
-    exception: unknown,
-    path: string,
-    correlationId: string,
-  ): IErrorResponse {
+  private handleUnknownError(exception: unknown, path: string): IErrorResponse {
     return {
-      statusCode: HttpStatus.INTERNAL_SERVER_ERROR,
       message: 'An unexpected error occurred',
       error: this.getHttpStatusText(HttpStatus.INTERNAL_SERVER_ERROR),
       timestamp: new Date().toISOString(),
       path,
-      correlationId,
       errors: [
         {
           path: 'server',
           message: 'Unknown error type',
-          code: ErrorCodes.INTERNAL_SERVER_ERROR,
         },
       ],
     };
