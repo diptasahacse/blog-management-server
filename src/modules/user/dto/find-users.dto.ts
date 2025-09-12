@@ -5,10 +5,9 @@ import {
   IsUUID,
   IsEnum,
   IsDateString,
-  Min,
-  Max,
 } from 'class-validator';
-import { Transform, Type } from 'class-transformer';
+import { Transform } from 'class-transformer';
+import { BaseQueryParamsDto } from '../../../shared/dto/dynamic-filter.dto';
 
 export enum UserRole {
   ADMIN = 'admin',
@@ -25,38 +24,16 @@ export enum UserSortField {
 }
 
 export enum SortOrder {
-  ASC = 'asc',
-  DESC = 'desc',
+  ASC = 'ASC',
+  DESC = 'DESC',
 }
 
-export class FindUsersDto {
-  @IsOptional()
-  @Type(() => Number)
-  @Min(1)
-  page?: number = 1;
-
-  @IsOptional()
-  @Type(() => Number)
-  @Min(1)
-  @Max(100)
-  limit?: number = 10;
-
+export class FindUsersDto extends BaseQueryParamsDto {
   @IsOptional()
   @IsEnum(UserSortField)
-  sortBy?: UserSortField = UserSortField.CREATED_AT;
+  override sortBy?: UserSortField = UserSortField.CREATED_AT;
 
-  @IsOptional()
-  @IsEnum(SortOrder)
-  sortOrder?: SortOrder = SortOrder.DESC;
-
-  // Search filters
-  @IsOptional()
-  @IsString()
-  @Transform(({ value }: { value: string }) =>
-    typeof value === 'string' ? value.trim() : value,
-  )
-  search?: string; // Global search across name and email
-
+  // User-specific search filters
   @IsOptional()
   @IsUUID()
   id?: string;

@@ -1,10 +1,21 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
-import { FindUsersDto, UserSortField, SortOrder } from './dto/find-users.dto';
+import { FindUsersDto, UserSortField } from './dto/find-users.dto';
 import { DrizzleProvider } from 'src/core/database';
 import { NodePgDatabase } from 'drizzle-orm/node-postgres';
-import { eq, and, or, gte, lte, count, ilike, desc, asc } from 'drizzle-orm';
+import {
+  eq,
+  and,
+  or,
+  gte,
+  lte,
+  count,
+  ilike,
+  desc,
+  asc,
+  SQL,
+} from 'drizzle-orm';
 import * as schema from 'src/core/database/schemas';
 import { LoggerService } from 'src/shared/services';
 import { ICommonResponse, IPagination } from 'src/shared/types';
@@ -150,17 +161,18 @@ export class UserService {
     }
   }
 
-  private buildWhereConditions(filters: FindUsersDto) {
-    const conditions: any[] = [];
+  private buildWhereConditions(filters: FindUsersDto): SQL | undefined {
+    const conditions: SQL[] = [];
 
     // Global search across name and email
     if (filters.search) {
-      conditions.push(
-        or(
-          ilike(schema.UserTable.name, `%${filters.search}%`),
-          ilike(schema.UserTable.email, `%${filters.search}%`),
-        ),
+      const searchCondition = or(
+        ilike(schema.UserTable.name, `%${filters.search}%`),
+        ilike(schema.UserTable.email, `%${filters.search}%`),
       );
+      if (searchCondition) {
+        conditions.push(searchCondition);
+      }
     }
 
     // Specific field filters
@@ -206,13 +218,13 @@ export class UserService {
     }
 
     // Return combined conditions or undefined if no conditions
-    // eslint-disable-next-line @typescript-eslint/no-unsafe-argument
     return conditions.length > 0 ? and(...conditions) : undefined;
   }
 
   private buildOrderByClause(filters: FindUsersDto) {
-    const sortField = filters.sortBy || UserSortField.CREATED_AT;
-    const sortOrder = filters.sortOrder || SortOrder.DESC;
+    const sortField =
+      (filters.sortBy as UserSortField) || UserSortField.CREATED_AT;
+    const sortOrder = filters.sortOrder || 'DESC';
 
     // Map enum values to actual column references
     const fieldMap = {
@@ -225,7 +237,7 @@ export class UserService {
     };
 
     const column = fieldMap[sortField];
-    return sortOrder === SortOrder.ASC ? asc(column) : desc(column);
+    return sortOrder === 'ASC' ? asc(column) : desc(column);
   }
 
   async findOne(id: string) {
