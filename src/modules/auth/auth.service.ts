@@ -156,7 +156,7 @@ export class AuthService {
   ): Promise<{ message: string }> {
     const { currentPassword, newPassword } = changePasswordDto;
 
-    const user = await this.userService.findById(userId);
+    const user = await this.userService.findUserWithPassword(userId);
     if (!user) {
       throw new UnauthorizedException('User not found');
     }

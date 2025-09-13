@@ -2,6 +2,7 @@ import { Inject, Injectable } from '@nestjs/common';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { FindUsersDto, UserSortField } from './dto/find-users.dto';
+import { UserWithProfileResponseDto } from './dto/user-with-profile.dto';
 import { DrizzleProvider } from 'src/core/database';
 import { NodePgDatabase } from 'drizzle-orm/node-postgres';
 import { eq, count, desc, asc, SQL } from 'drizzle-orm';
@@ -79,9 +80,7 @@ export class UserService {
 
   async findAll(
     filters: FindUsersDto,
-  ): Promise<
-    ICommonResponse<Omit<typeof schema.UserTable.$inferSelect, 'password'>[]>
-  > {
+  ): Promise<ICommonResponse<UserWithProfileResponseDto[]>> {
     try {
       this.logger.log('Fetching users with filters', 'UserService');
 
@@ -105,44 +104,73 @@ export class UserService {
         ? await countQuery.where(whereConditions)
         : await countQuery;
 
-      // Get paginated results (exclude password)
-      const usersQuery = this.db
+      // Get paginated results with profile data (exclude password)
+      const usersWithProfilesQuery = this.db
         .select({
-          id: schema.UserTable.id,
-          name: schema.UserTable.name,
-          email: schema.UserTable.email,
-          role: schema.UserTable.role,
-          verifiedAt: schema.UserTable.verifiedAt,
-          createdAt: schema.UserTable.createdAt,
-          updatedAt: schema.UserTable.updatedAt,
+          user: {
+            id: schema.UserTable.id,
+            name: schema.UserTable.name,
+            email: schema.UserTable.email,
+            role: schema.UserTable.role,
+            verifiedAt: schema.UserTable.verifiedAt,
+            createdAt: schema.UserTable.createdAt,
+            updatedAt: schema.UserTable.updatedAt,
+          },
+          profile: {
+            id: schema.ProfileTable.id,
+            userId: schema.ProfileTable.userId,
+            avatar: schema.ProfileTable.avatar,
+            bio: schema.ProfileTable.bio,
+            createdAt: schema.ProfileTable.createdAt,
+            updatedAt: schema.ProfileTable.updatedAt,
+          },
         })
-        .from(schema.UserTable);
+        .from(schema.UserTable)
+        .leftJoin(
+          schema.ProfileTable,
+          eq(schema.UserTable.id, schema.ProfileTable.userId),
+        );
 
-      const users = whereConditions
-        ? await usersQuery
+      const usersWithProfiles = whereConditions
+        ? await usersWithProfilesQuery
             .where(whereConditions)
             .orderBy(orderByClause)
             .limit(limit)
             .offset(offset)
-        : await usersQuery.orderBy(orderByClause).limit(limit).offset(offset);
+        : await usersWithProfilesQuery
+            .orderBy(orderByClause)
+            .limit(limit)
+            .offset(offset);
+
+      // Transform results to DTOs
+      const userDtos = usersWithProfiles.map(
+        (row) =>
+          new UserWithProfileResponseDto(
+            {
+              ...row.user,
+              verifiedAt: row.user.verifiedAt ?? undefined,
+            },
+            row.profile?.id ? row.profile : undefined,
+          ),
+      );
 
       // Calculate pagination metadata
       const totalPages = Math.ceil(totalCount / limit);
       const pagination: IPagination = {
         totalItems: totalCount,
-        itemCount: users.length,
+        itemCount: userDtos.length,
         itemsPerPage: limit,
         totalPages,
         currentPage: page,
       };
 
       this.logger.log(
-        `Found ${users.length} users (page ${page}/${totalPages})`,
+        `Found ${userDtos.length} users (page ${page}/${totalPages})`,
         'UserService',
       );
 
       return {
-        data: users,
+        data: userDtos,
         pagination,
       };
     } catch (error) {
@@ -238,7 +266,64 @@ export class UserService {
     return sortOrder === 'ASC' ? asc(column) : desc(column);
   }
 
-  async findOne(id: string) {
+  async findOne(id: string): Promise<UserWithProfileResponseDto> {
+    try {
+      this.logger.log(`Fetching user with ID: ${id}`, 'UserService');
+
+      const [result] = await this.db
+        .select({
+          user: {
+            id: schema.UserTable.id,
+            name: schema.UserTable.name,
+            email: schema.UserTable.email,
+            role: schema.UserTable.role,
+            verifiedAt: schema.UserTable.verifiedAt,
+            createdAt: schema.UserTable.createdAt,
+            updatedAt: schema.UserTable.updatedAt,
+          },
+          profile: {
+            id: schema.ProfileTable.id,
+            userId: schema.ProfileTable.userId,
+            avatar: schema.ProfileTable.avatar,
+            bio: schema.ProfileTable.bio,
+            createdAt: schema.ProfileTable.createdAt,
+            updatedAt: schema.ProfileTable.updatedAt,
+          },
+        })
+        .from(schema.UserTable)
+        .leftJoin(
+          schema.ProfileTable,
+          eq(schema.UserTable.id, schema.ProfileTable.userId),
+        )
+        .where(eq(schema.UserTable.id, id))
+        .limit(1);
+
+      if (!result) {
+        throw new ResourceNotFoundException('User', id);
+      }
+
+      return new UserWithProfileResponseDto(
+        {
+          ...result.user,
+          verifiedAt: result.user.verifiedAt ?? undefined,
+        },
+        result.profile?.id ? result.profile : undefined,
+      );
+    } catch (error) {
+      if (error instanceof ResourceNotFoundException) {
+        throw error; // Re-throw custom exceptions as-is
+      }
+      this.logger.error(
+        `Failed to fetch user with ID: ${id}`,
+        (error as Error).stack,
+        'UserService',
+      );
+      throw error;
+    }
+  }
+
+  // Internal method for getting user without profile for other operations
+  private async findUserById(id: string) {
     try {
       this.logger.log(`Fetching user with ID: ${id}`, 'UserService');
 
@@ -266,12 +351,17 @@ export class UserService {
     }
   }
 
+  // Method for auth service to get user with password
+  async findUserWithPassword(id: string) {
+    return this.findUserById(id);
+  }
+
   async update(id: string, updateUserDto: UpdateUserDto) {
     try {
       this.logger.log(`Updating user with ID: ${id}`, 'UserService');
 
       // First check if user exists
-      await this.findOne(id);
+      await this.findUserById(id);
 
       // Check for email conflicts if email is being updated
       if (updateUserDto.email) {
@@ -320,7 +410,7 @@ export class UserService {
       this.logger.log(`Removing user with ID: ${id}`, 'UserService');
 
       // First check if user exists
-      await this.findOne(id);
+      await this.findUserById(id);
 
       await this.db.delete(schema.UserTable).where(eq(schema.UserTable.id, id));
 
@@ -375,7 +465,7 @@ export class UserService {
       );
 
       // First check if user exists
-      await this.findOne(id);
+      await this.findUserById(id);
 
       await this.db
         .update(schema.UserTable)
