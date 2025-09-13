@@ -1,7 +1,7 @@
 import { Controller, Get, Post } from '@nestjs/common';
 import { AppService } from './app.service';
-import { DiscordNotificationService } from './common/services/discord-notification.service';
-import { BusinessLogicException } from './common/exceptions/custom.exceptions';
+import { DiscordNotificationService } from './shared/services';
+import { BusinessLogicException } from './shared/exceptions';
 
 @Controller()
 export class AppController {

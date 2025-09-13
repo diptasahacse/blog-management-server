@@ -1,8 +1,9 @@
 import { NestFactory } from '@nestjs/core';
 import { AppModule } from './app.module';
-import { ValidationPipe } from '@nestjs/common';
-import { AllExceptionsFilter } from './common/all-exceptions.filter';
-import { LoggerService } from './common/services/logger.service';
+import { ValidationPipe, HttpException, HttpStatus } from '@nestjs/common';
+import { ValidationError } from 'class-validator';
+import { AllExceptionsFilter } from './shared/filters';
+import { LoggerService } from './shared/services';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
@@ -15,9 +16,23 @@ async function bootstrap() {
 
   app.useGlobalPipes(
     new ValidationPipe({
-      whitelist: true, // অতিরিক্ত property remove করবে
-      forbidNonWhitelisted: true, // unknown property দিলে error দিবে
-      transform: true, // plain object কে DTO class এ convert করবে
+      whitelist: true,
+      forbidNonWhitelisted: true,
+      transform: true,
+      exceptionFactory: (errors: ValidationError[]) => {
+        const result = errors.map((error) => ({
+          property: error.property,
+          value: error.value as string | undefined,
+          constraints: error.constraints || {},
+        }));
+        return new HttpException(
+          {
+            message: 'Validation failed',
+            errors: result,
+          },
+          HttpStatus.BAD_REQUEST,
+        );
+      },
     }),
   );
 

@@ -1,8 +1,8 @@
 import { Inject, Injectable } from '@nestjs/common';
 import { NodePgDatabase } from 'drizzle-orm/node-postgres';
 import { eq, inArray } from 'drizzle-orm';
-import * as schema from 'src/drizzle/schemas';
-import { DrizzleProvider } from 'src/drizzle/drizzle.module';
+import * as schema from 'src/core/database/schemas';
+import { DrizzleProvider } from 'src/core/database';
 import {
   ExtendedTable,
   IBaseRepository,
