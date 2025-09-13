@@ -23,13 +23,8 @@ export class UserController {
   }
 
   @Get()
-  findAll() {
-    return this.userService.findAll();
-  }
-
-  @Get('search')
-  searchUsers(@Query() filters: FindUsersDto) {
-    return this.userService.findUsers(filters);
+  findAll(@Query() filters: FindUsersDto) {
+    return this.userService.findAll(filters);
   }
 
   @Get(':id')

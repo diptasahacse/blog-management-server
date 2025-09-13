@@ -62,22 +62,22 @@ export class UserService {
     }
   }
 
-  async findAll() {
-    try {
-      this.logger.log('Fetching all users', 'UserService');
-      const users = await this.db.select().from(schema.UserTable);
-      return users;
-    } catch (error) {
-      this.logger.error(
-        'Failed to fetch users',
-        (error as Error).stack,
-        'UserService',
-      );
-      throw error;
-    }
-  }
+  // async findAll() {
+  //   try {
+  //     this.logger.log('Fetching all users', 'UserService');
+  //     const users = await this.db.select().from(schema.UserTable);
+  //     return users;
+  //   } catch (error) {
+  //     this.logger.error(
+  //       'Failed to fetch users',
+  //       (error as Error).stack,
+  //       'UserService',
+  //     );
+  //     throw error;
+  //   }
+  // }
 
-  async findUsers(
+  async findAll(
     filters: FindUsersDto,
   ): Promise<
     ICommonResponse<Omit<typeof schema.UserTable.$inferSelect, 'password'>[]>
