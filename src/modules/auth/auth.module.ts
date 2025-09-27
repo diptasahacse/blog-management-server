@@ -6,13 +6,16 @@ import { AuthService } from './auth.service';
 import { AuthController } from './auth.controller';
 import { UserModule } from '../user/user.module';
 import { SharedModule } from 'src/shared/shared.module';
+import { DrizzleModule } from '../../core/database/drizzle.module';
 import { LocalStrategy } from './strategies/local.strategy';
 import { JwtStrategy } from './strategies/jwt.strategy';
+import { OtpService } from './services/otp.service';
 
 @Module({
   imports: [
     UserModule,
     SharedModule,
+    DrizzleModule,
     PassportModule,
     ConfigModule,
     JwtModule.registerAsync({
@@ -25,7 +28,7 @@ import { JwtStrategy } from './strategies/jwt.strategy';
     }),
   ],
   controllers: [AuthController],
-  providers: [AuthService, LocalStrategy, JwtStrategy],
+  providers: [AuthService, OtpService, LocalStrategy, JwtStrategy],
   exports: [AuthService],
 })
 export class AuthModule {}

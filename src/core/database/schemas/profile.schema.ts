@@ -12,7 +12,7 @@ export const ProfileTable = pgTable('profiles', {
       onDelete: 'cascade',
     })
     .notNull()
-    .unique(), // Add unique constraint to ensure one-to-one relationship
+    .unique(), // Ensure one-to-one relationship
   avatar: varchar('avatar', { length: 255 }),
   bio: text('bio'),
   createdAt: timestamp('created_at').notNull().defaultNow(),

@@ -16,6 +16,7 @@ import {
   TokenPair,
 } from './interfaces/auth.interface';
 import { ConflictChecker, UniqueField } from '../../shared/utils';
+import { OtpService } from './services/otp.service';
 
 interface User {
   id: string;
@@ -31,9 +32,12 @@ export class AuthService {
     private userService: UserService,
     private jwtService: JwtService,
     private configService: ConfigService,
+    private otpService: OtpService,
   ) {}
 
-  async register(registerDto: RegisterDto): Promise<AuthResponse> {
+  async register(
+    registerDto: RegisterDto,
+  ): Promise<{ message: string; email: string }> {
     const { email, password, name, role } = registerDto;
 
     // Define unique fields to check
@@ -80,12 +84,66 @@ export class AuthService {
     const saltRounds = 12;
     const hashedPassword = await bcrypt.hash(password, saltRounds);
 
-    // Create user
-    const user = await this.userService.create({
+    // Store user data temporarily (we'll create user after OTP verification)
+    const temporaryUserData = {
       email,
       password: hashedPassword,
       name,
       role: role || 'user',
+    };
+
+    // Generate and store OTP
+    const otpCode = await this.otpService.createOtp({
+      email,
+      purpose: 'register',
+      additionalInfo: JSON.stringify(temporaryUserData),
+    });
+
+    // TODO: Send email with OTP link
+    // For now, we'll return the OTP code (remove this in production)
+    console.log(`Registration OTP for ${email}: ${otpCode}`);
+
+    return {
+      message:
+        'Registration initiated. Please check your email for verification link.',
+      email,
+    };
+  }
+
+  async verifyRegistrationOtp(otpCode: string): Promise<AuthResponse> {
+    // Verify OTP
+    const otpResult = await this.otpService.verifyOtpByCode(otpCode);
+
+    if (!otpResult.isValid || otpResult.purpose !== 'register') {
+      throw new BadRequestException('Invalid or expired OTP code');
+    }
+
+    if (!otpResult.additionalInfo) {
+      throw new BadRequestException('Registration data not found');
+    }
+
+    // Parse stored user data with type safety
+    const temporaryUserData = JSON.parse(otpResult.additionalInfo) as {
+      email: string;
+      password: string;
+      name: string;
+      role: 'admin' | 'user';
+    };
+
+    // Check if user already exists (in case of race condition)
+    const existingUser = await this.userService.findByEmail(
+      temporaryUserData.email,
+    );
+    if (existingUser) {
+      throw new BadRequestException('User already exists');
+    }
+
+    // Create user
+    const user = await this.userService.create({
+      email: temporaryUserData.email,
+      password: temporaryUserData.password,
+      name: temporaryUserData.name,
+      role: temporaryUserData.role,
     });
 
     // Generate tokens

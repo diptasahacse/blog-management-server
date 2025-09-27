@@ -1,4 +1,12 @@
-import { Controller, Post, Body, UseGuards, Get, Patch } from '@nestjs/common';
+import {
+  Controller,
+  Post,
+  Body,
+  UseGuards,
+  Get,
+  Patch,
+  Query,
+} from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
@@ -23,6 +31,14 @@ export class AuthController {
   @Post('register')
   async register(@Body() registerDto: RegisterDto) {
     return this.authService.register(registerDto);
+  }
+
+  @Get('verify-otp')
+  async verifyOtp(@Query('code') code: string) {
+    if (!code) {
+      return { error: 'OTP code is required' };
+    }
+    return this.authService.verifyRegistrationOtp(code);
   }
 
   @UseGuards(LocalAuthGuard)
