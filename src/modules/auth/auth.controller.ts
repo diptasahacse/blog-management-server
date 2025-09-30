@@ -5,7 +5,7 @@ import {
   UseGuards,
   Get,
   Patch,
-  Query,
+  // Query,
 } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { RegisterDto } from './dto/register.dto';
@@ -33,13 +33,13 @@ export class AuthController {
     return this.authService.register(registerDto);
   }
 
-  @Get('verify-otp')
-  async verifyOtp(@Query('code') code: string) {
-    if (!code) {
-      return { error: 'OTP code is required' };
-    }
-    return this.authService.verifyRegistrationOtp(code);
-  }
+  // @Get('verify-otp')
+  // async verifyOtp(@Query('code') code: string) {
+  //   if (!code) {
+  //     return { error: 'OTP code is required' };
+  //   }
+  //   return this.authService.verifyRegistrationOtp(code);
+  // }
 
   @UseGuards(LocalAuthGuard)
   @Post('login')
