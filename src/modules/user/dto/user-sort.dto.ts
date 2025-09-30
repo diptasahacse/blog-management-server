@@ -1,10 +1,5 @@
 import { IsOptional, IsEnum } from 'class-validator';
 import { BaseSortDto } from 'src/shared/dto/sort.dto';
-export enum UserRole {
-  ADMIN = 'admin',
-  USER = 'user',
-}
-
 export enum UserSortField {
   ID = 'id',
   NAME = 'name',

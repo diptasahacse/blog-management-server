@@ -17,6 +17,7 @@ import {
 } from './interfaces/auth.interface';
 import { ConflictChecker, UniqueField } from '../../shared/utils';
 import { OtpService } from './services/otp.service';
+import { OtpChannelEnum, OtpPurposeEnum } from './enums/otp.enum';
 
 interface User {
   id: string;
@@ -38,7 +39,7 @@ export class AuthService {
   async register(
     registerDto: RegisterDto,
   ): Promise<{ message: string; email: string }> {
-    const { email, password, name, role } = registerDto;
+    const { email, password, name } = registerDto;
 
     // Define unique fields to check
     const uniqueFields: UniqueField[] = [
@@ -83,20 +84,18 @@ export class AuthService {
     // Hash password
     const saltRounds = 12;
     const hashedPassword = await bcrypt.hash(password, saltRounds);
-
-    // Store user data temporarily (we'll create user after OTP verification)
-    const temporaryUserData = {
+    //  Store user data
+    const user = await this.userService.create({
+      name,
       email,
       password: hashedPassword,
-      name,
-      role: role || 'user',
-    };
+    });
 
     // Generate and store OTP
-    const otpCode = await this.otpService.createOtp({
-      email,
-      purpose: 'register',
-      additionalInfo: JSON.stringify(temporaryUserData),
+    const otpCode = await this.otpService.generateOTP({
+      purpose: OtpPurposeEnum.REGISTER,
+      channel: OtpChannelEnum.EMAIL,
+      userId: user.id,
     });
 
     // TODO: Send email with OTP link
@@ -110,55 +109,55 @@ export class AuthService {
     };
   }
 
-  async verifyRegistrationOtp(otpCode: string): Promise<AuthResponse> {
-    // Verify OTP
-    const otpResult = await this.otpService.verifyOtpByCode(otpCode);
+  // async verifyRegistrationOtp(otpCode: string): Promise<AuthResponse> {
+  //   // Verify OTP
+  //   const otpResult = await this.otpService.verifyOtpByCode(otpCode);
 
-    if (!otpResult.isValid || otpResult.purpose !== 'register') {
-      throw new BadRequestException('Invalid or expired OTP code');
-    }
+  //   if (!otpResult.isValid || otpResult.purpose !== 'register') {
+  //     throw new BadRequestException('Invalid or expired OTP code');
+  //   }
 
-    if (!otpResult.additionalInfo) {
-      throw new BadRequestException('Registration data not found');
-    }
+  //   if (!otpResult.additionalInfo) {
+  //     throw new BadRequestException('Registration data not found');
+  //   }
 
-    // Parse stored user data with type safety
-    const temporaryUserData = JSON.parse(otpResult.additionalInfo) as {
-      email: string;
-      password: string;
-      name: string;
-      role: 'admin' | 'user';
-    };
+  //   // Parse stored user data with type safety
+  //   const temporaryUserData = JSON.parse(otpResult.additionalInfo) as {
+  //     email: string;
+  //     password: string;
+  //     name: string;
+  //     role: 'admin' | 'user';
+  //   };
 
-    // Check if user already exists (in case of race condition)
-    const existingUser = await this.userService.findByEmail(
-      temporaryUserData.email,
-    );
-    if (existingUser) {
-      throw new BadRequestException('User already exists');
-    }
+  //   // Check if user already exists (in case of race condition)
+  //   const existingUser = await this.userService.findByEmail(
+  //     temporaryUserData.email,
+  //   );
+  //   if (existingUser) {
+  //     throw new BadRequestException('User already exists');
+  //   }
 
-    // Create user
-    const user = await this.userService.create({
-      email: temporaryUserData.email,
-      password: temporaryUserData.password,
-      name: temporaryUserData.name,
-      role: temporaryUserData.role,
-    });
+  //   // Create user
+  //   const user = await this.userService.create({
+  //     email: temporaryUserData.email,
+  //     password: temporaryUserData.password,
+  //     name: temporaryUserData.name,
+  //     role: temporaryUserData.role,
+  //   });
 
-    // Generate tokens
-    const tokens = await this.generateTokens(user.id, user.email, user.role);
+  //   // Generate tokens
+  //   const tokens = await this.generateTokens(user.id, user.email, user.role);
 
-    return {
-      ...tokens,
-      user: {
-        id: user.id,
-        email: user.email,
-        name: user.name,
-        role: user.role,
-      },
-    };
-  }
+  //   return {
+  //     ...tokens,
+  //     user: {
+  //       id: user.id,
+  //       email: user.email,
+  //       name: user.name,
+  //       role: user.role,
+  //     },
+  //   };
+  // }
 
   async login(loginDto: LoginDto): Promise<AuthResponse> {
     const { email, password } = loginDto;

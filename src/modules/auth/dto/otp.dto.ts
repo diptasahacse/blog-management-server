@@ -1,24 +1,34 @@
-import { IsString, IsNotEmpty, Length } from 'class-validator';
+import { IsEnum, IsOptional, IsUUID, Length } from 'class-validator';
+import { OtpChannelEnum, OtpPurposeEnum } from '../enums/otp.enum';
+export class GenerateOtpDto {
+  @IsUUID()
+  userId: string;
 
+  @IsEnum(OtpPurposeEnum)
+  purpose: OtpPurposeEnum;
+
+  @IsOptional()
+  @IsEnum(OtpChannelEnum)
+  channel: OtpChannelEnum = OtpChannelEnum.EMAIL;
+}
 export class VerifyOtpDto {
-  @IsString()
-  @IsNotEmpty()
-  @Length(6, 6, { message: 'OTP code must be exactly 6 digits' })
-  code: string;
+  @IsUUID()
+  userId: string;
+
+  @Length(6, 6)
+  otpCode: string;
+
+  @IsEnum(OtpPurposeEnum)
+  purpose: OtpPurposeEnum;
 }
 
-export class OtpResponseDto {
-  message: string;
-  email: string;
-}
+export class ResendOtpDto {
+  @IsUUID()
+  userId: string;
 
-export class VerificationResponseDto {
-  accessToken: string;
-  refreshToken: string;
-  user: {
-    id: string;
-    email: string;
-    name: string;
-    role: string;
-  };
+  @IsEnum(OtpPurposeEnum)
+  purpose: OtpPurposeEnum;
+
+  @IsEnum(OtpChannelEnum)
+  channel: OtpChannelEnum;
 }

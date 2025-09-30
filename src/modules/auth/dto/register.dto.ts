@@ -1,12 +1,5 @@
-import {
-  IsEmail,
-  IsString,
-  MinLength,
-  IsOptional,
-  IsEnum,
-} from 'class-validator';
+import { IsEmail, IsString, MinLength } from 'class-validator';
 import { Transform } from 'class-transformer';
-
 export class RegisterDto {
   @IsString()
   @MinLength(2)
@@ -19,8 +12,4 @@ export class RegisterDto {
   @IsString()
   @MinLength(8)
   password: string;
-
-  @IsOptional()
-  @IsEnum(['admin', 'user'])
-  role?: 'admin' | 'user' = 'user';
 }

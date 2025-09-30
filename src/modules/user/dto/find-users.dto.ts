@@ -8,11 +8,7 @@ import {
 } from 'class-validator';
 import { Transform } from 'class-transformer';
 import { BaseQueryParamsDto } from '../../../shared/dto/dynamic-filter.dto';
-
-export enum UserRole {
-  ADMIN = 'admin',
-  USER = 'user',
-}
+import { UserRoleEnum } from 'src/modules/auth/enums/user.enum';
 
 export enum UserSortField {
   ID = 'id',
@@ -53,8 +49,8 @@ export class FindUsersDto extends BaseQueryParamsDto {
   email?: string;
 
   @IsOptional()
-  @IsEnum(UserRole)
-  role?: UserRole;
+  @IsEnum(UserRoleEnum)
+  role?: UserRoleEnum;
 
   @IsOptional()
   @IsDateString()
