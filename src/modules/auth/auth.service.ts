@@ -15,9 +15,10 @@ import {
   JwtPayload,
   TokenPair,
 } from './interfaces/auth.interface';
-import { ConflictChecker, UniqueField } from '../../shared/utils';
 import { OtpService } from './services/otp.service';
 import { OtpChannelEnum, OtpPurposeEnum } from './enums/otp.enum';
+import { NotificationService } from '../notification/notification.service';
+import { NotificationChannelEnum } from '../notification/enum/notification-channel.enum';
 
 interface User {
   id: string;
@@ -34,6 +35,7 @@ export class AuthService {
     private jwtService: JwtService,
     private configService: ConfigService,
     private otpService: OtpService,
+    private notificationService: NotificationService,
   ) {}
 
   async register(
@@ -96,8 +98,17 @@ export class AuthService {
         channel: OtpChannelEnum.EMAIL,
         userId: existingUser.id,
       });
-      // TODO: Send email with OTP link
-
+      await this.notificationService.sendNotification({
+        channel: NotificationChannelEnum.EMAIL,
+        email: {
+          to: existingUser.email,
+          subject: 'Verify your email address',
+          template: 'verify-email',
+          context: {
+            otpCode,
+          },
+        },
+      });
       return {
         message:
           'User is registered but not verified. A new verification link has been sent to your email.',
@@ -122,7 +133,17 @@ export class AuthService {
       userId: user.id,
     });
 
-    // TODO: Send email with OTP link
+    await this.notificationService.sendNotification({
+      channel: NotificationChannelEnum.EMAIL,
+      email: {
+        to: user.email,
+        subject: 'Verify your email address',
+        template: 'verify-email',
+        context: {
+          otpCode,
+        },
+      },
+    });
 
     return {
       message:

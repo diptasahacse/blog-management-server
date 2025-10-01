@@ -10,6 +10,7 @@ import { DrizzleModule } from '../../core/database/drizzle.module';
 import { LocalStrategy } from './strategies/local.strategy';
 import { JwtStrategy } from './strategies/jwt.strategy';
 import { OtpService } from './services/otp.service';
+import { NotificationModule } from '../notification/notification.module';
 
 @Module({
   imports: [
@@ -18,6 +19,7 @@ import { OtpService } from './services/otp.service';
     DrizzleModule,
     PassportModule,
     ConfigModule,
+    NotificationModule,
     JwtModule.registerAsync({
       imports: [ConfigModule],
       useFactory: (configService: ConfigService) => ({
