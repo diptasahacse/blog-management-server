@@ -1,5 +1,5 @@
 {
-  "id": "b7526aa8-a0d9-469d-9a77-3051867f1d4a",
+  "id": "87aa92d9-43b1-4e54-8380-86ee87108140",
   "prevId": "00000000-0000-0000-0000-000000000000",
   "version": "7",
   "dialect": "postgresql",
@@ -157,10 +157,9 @@
       "columns": {
         "id": {
           "name": "id",
-          "type": "uuid",
+          "type": "serial",
           "primaryKey": true,
-          "notNull": true,
-          "default": "gen_random_uuid()"
+          "notNull": true
         },
         "userId": {
           "name": "userId",
@@ -237,7 +236,7 @@
           "columnsTo": [
             "id"
           ],
-          "onDelete": "no action",
+          "onDelete": "cascade",
           "onUpdate": "no action"
         }
       },

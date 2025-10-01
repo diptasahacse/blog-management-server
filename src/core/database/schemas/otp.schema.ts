@@ -7,6 +7,7 @@ import {
   OtpPurposeEnum,
   OtpStatusEnum,
 } from 'src/modules/auth/enums/otp.enum';
+import { serial } from 'drizzle-orm/pg-core';
 
 // Define enum for OTP purposes
 export const otpPurposeEnum = pgEnum('otp_purpose', [
@@ -32,9 +33,9 @@ export const otpChannelEnum = pgEnum('otp_channel', [
 ]);
 
 export const OtpTable = pgTable('otp', {
-  id: uuid().primaryKey().defaultRandom(),
+  id: serial('id').primaryKey(), // Primary key
   userId: uuid()
-    .references(() => UserTable.id)
+    .references(() => UserTable.id, { onDelete: 'cascade' })
     .notNull(), // Reference to User table
   otpCode: varchar('code', { length: 6 }).notNull(), // 6-digit OTP code
   purpose: otpPurposeEnum('purpose').notNull(), // Purpose of the OTP

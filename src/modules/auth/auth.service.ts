@@ -41,45 +41,69 @@ export class AuthService {
   ): Promise<{ message: string; email: string }> {
     const { email, password, name } = registerDto;
 
-    // Define unique fields to check
-    const uniqueFields: UniqueField[] = [
-      {
-        field: 'email',
-        value: email,
-        message: 'User with this email already exists',
-      },
-      // You can easily add more unique fields here:
-      {
-        field: 'username',
-        value: name,
-        message: 'Username is already taken',
-      },
-      // {
-      //   field: 'phone',
-      //   value: phone,
-      //   message: 'Phone number is already registered',
-      // },
-    ];
+    // // Define unique fields to check
+    // const uniqueFields: UniqueField[] = [
+    //   {
+    //     field: 'email',
+    //     value: email,
+    //     message: 'User with this email already exists',
+    //   },
+    //   // You can easily add more unique fields here:
+    //   {
+    //     field: 'username',
+    //     value: name,
+    //     message: 'Username is already taken',
+    //   },
+    //   // {
+    //   //   field: 'phone',
+    //   //   value: phone,
+    //   //   message: 'Phone number is already registered',
+    //   // },
+    // ];
 
-    // Define corresponding check functions
-    const checkFunctions = [
-      async (emailValue: string) => {
-        const existingUser = await this.userService.findByEmail(emailValue);
-        return !!existingUser;
-      },
-      // Add more check functions for other unique fields:
-      // async (usernameValue: string) => {
-      //   const existingUser = await this.userService.findByUsername(usernameValue);
-      //   return !!existingUser;
-      // },
-      // async (phoneValue: string) => {
-      //   const existingUser = await this.userService.findByPhone(phoneValue);
-      //   return !!existingUser;
-      // },
-    ];
+    // // Define corresponding check functions
+    // const checkFunctions = [
+    //   async (emailValue: string) => {
+    //     const existingUser = await this.userService.findByEmail(emailValue);
+    //     return !!existingUser;
+    //   },
+    //   // Add more check functions for other unique fields:
+    //   // async (usernameValue: string) => {
+    //   //   const existingUser = await this.userService.findByUsername(usernameValue);
+    //   //   return !!existingUser;
+    //   // },
+    //   // async (phoneValue: string) => {
+    //   //   const existingUser = await this.userService.findByPhone(phoneValue);
+    //   //   return !!existingUser;
+    //   // },
+    // ];
 
-    // Check for conflicts and throw if any exist
-    await ConflictChecker.checkAndThrowConflicts(uniqueFields, checkFunctions);
+    // // Check for conflicts and throw if any exist
+    // await ConflictChecker.checkAndThrowConflicts(uniqueFields, checkFunctions);
+
+    // Check if user already exists and is verified
+    const existingUser = await this.userService.findByEmail(email);
+    if (existingUser && existingUser.verifiedAt) {
+      throw new BadRequestException(
+        'User with this email is already registered',
+      );
+    }
+
+    // If user exists but is not verified, we can choose to resend OTP or update details
+    if (existingUser) {
+      const otpCode = await this.otpService.generateOTP({
+        purpose: OtpPurposeEnum.REGISTER,
+        channel: OtpChannelEnum.EMAIL,
+        userId: existingUser.id,
+      });
+      // TODO: Send email with OTP link
+
+      return {
+        message:
+          'User is registered but not verified. A new verification link has been sent to your email.',
+        email,
+      };
+    }
 
     // Hash password
     const saltRounds = 12;
@@ -99,8 +123,6 @@ export class AuthService {
     });
 
     // TODO: Send email with OTP link
-    // For now, we'll return the OTP code (remove this in production)
-    console.log(`Registration OTP for ${email}: ${otpCode}`);
 
     return {
       message:
@@ -183,6 +205,9 @@ export class AuthService {
   async validateUser(email: string, password: string): Promise<User | null> {
     const user = await this.userService.findByEmail(email);
     if (user && (await bcrypt.compare(password, user.password))) {
+      if (!user.verifiedAt) {
+        throw new BadRequestException('User not verified');
+      }
       // eslint-disable-next-line @typescript-eslint/no-unused-vars
       const { password: _, ...result } = user;
       return result as User;
