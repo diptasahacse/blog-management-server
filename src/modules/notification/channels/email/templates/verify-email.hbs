@@ -1,5 +1,36 @@
 <html>
-  <body>
-    <h2>Hello {{otpCode}},</h2>
+  <head>
+    <meta charset="UTF-8" />
+    <title>Email Verification</title>
+    <!-- Tailwind CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+  </head>
+  <body class="bg-gray-100 py-6">
+    <div class="max-w-lg mx-auto bg-white rounded-xl shadow-md p-8">
+      <h2 class="text-2xl font-bold text-gray-800 mb-4">
+        Hello {{name}},
+      </h2>
+      <p class="text-gray-600 mb-4">
+        Thank you for registering with <span class="font-semibold">Brand Name</span>! <br />
+        Please verify your email address using the OTP code below:
+      </p>
+
+      <div class="text-center my-6">
+        <span
+          class="text-3xl font-bold tracking-widest text-indigo-600 bg-gray-100 px-6 py-3 rounded-lg shadow"
+        >
+          {{otpCode}}
+        </span>
+      </div>
+
+      <p class="text-gray-600">
+        This code will expire in <span class="font-semibold">10 minutes</span>. <br />
+        If you did not request this, please ignore this email.
+      </p>
+
+      <div class="text-center mt-8 text-gray-400 text-sm">
+        &copy; {{year}} Brand Name. All rights reserved.
+      </div>
+    </div>
   </body>
 </html>

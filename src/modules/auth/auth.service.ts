@@ -105,7 +105,9 @@ export class AuthService {
           subject: 'Verify your email address',
           template: 'verify-email',
           context: {
-            otpCode,
+            name: existingUser.name,
+            otpCode: otpCode,
+            year: new Date().getFullYear(),
           },
         },
       });
@@ -140,7 +142,9 @@ export class AuthService {
         subject: 'Verify your email address',
         template: 'verify-email',
         context: {
-          otpCode,
+          name: user.name,
+          otpCode: otpCode,
+          year: new Date().getFullYear(),
         },
       },
     });
