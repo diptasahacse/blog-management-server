@@ -24,7 +24,10 @@ import { AppProvider } from './channels/app.provider';
         from: 'System Notification',
       },
       template: {
-        dir: join(__dirname, 'channels/email/templates'),
+        dir: join(
+          process.cwd(),
+          'src/modules/notification/channels/email/templates',
+        ),
         adapter: new HandlebarsAdapter(),
         options: {
           strict: true,
