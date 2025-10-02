@@ -17,6 +17,7 @@ import { JwtAuthGuard } from './guards/jwt-auth.guard';
 import { RolesGuard } from './guards/roles.guard';
 import { GetUser } from './decorators/get-user.decorator';
 import { Roles } from './decorators/roles.decorator';
+import { VerifyOtpRegistrationDto } from './dto/otp.dto';
 
 interface AuthenticatedUser {
   id: string;
@@ -33,13 +34,10 @@ export class AuthController {
     return this.authService.register(registerDto);
   }
 
-  // @Get('verify-otp')
-  // async verifyOtp(@Query('code') code: string) {
-  //   if (!code) {
-  //     return { error: 'OTP code is required' };
-  //   }
-  //   return this.authService.verifyRegistrationOtp(code);
-  // }
+  @Post('verify-otp')
+  async verifyOtp(@Body() dto: VerifyOtpRegistrationDto) {
+    return this.authService.verifyRegistrationOtp(dto);
+  }
 
   @UseGuards(LocalAuthGuard)
   @Post('login')

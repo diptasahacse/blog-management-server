@@ -19,6 +19,7 @@ import { OtpService } from './services/otp.service';
 import { OtpChannelEnum, OtpPurposeEnum } from './enums/otp.enum';
 import { NotificationService } from '../notification/notification.service';
 import { NotificationChannelEnum } from '../notification/enum/notification-channel.enum';
+import { VerifyOtpRegistrationDto } from './dto/otp.dto';
 
 interface User {
   id: string;
@@ -156,55 +157,35 @@ export class AuthService {
     };
   }
 
-  // async verifyRegistrationOtp(otpCode: string): Promise<AuthResponse> {
-  //   // Verify OTP
-  //   const otpResult = await this.otpService.verifyOtpByCode(otpCode);
+  async verifyRegistrationOtp(
+    dto: VerifyOtpRegistrationDto,
+  ): Promise<{ message: string }> {
+    const { email, channel } = dto;
+    const userData = await this.userService.findByEmail(email);
+    if (!userData) {
+      throw new BadRequestException('User not found');
+    }
+    if (userData.verifiedAt) {
+      throw new BadRequestException('User already verified');
+    }
 
-  //   if (!otpResult.isValid || otpResult.purpose !== 'register') {
-  //     throw new BadRequestException('Invalid or expired OTP code');
-  //   }
+    // Verify OTP
+    const otpResult = await this.otpService.verifyOTP({
+      userId: userData.id,
+      otpCode: dto.otpCode,
+      purpose: OtpPurposeEnum.REGISTER,
+      channel: channel,
+    });
 
-  //   if (!otpResult.additionalInfo) {
-  //     throw new BadRequestException('Registration data not found');
-  //   }
-
-  //   // Parse stored user data with type safety
-  //   const temporaryUserData = JSON.parse(otpResult.additionalInfo) as {
-  //     email: string;
-  //     password: string;
-  //     name: string;
-  //     role: 'admin' | 'user';
-  //   };
-
-  //   // Check if user already exists (in case of race condition)
-  //   const existingUser = await this.userService.findByEmail(
-  //     temporaryUserData.email,
-  //   );
-  //   if (existingUser) {
-  //     throw new BadRequestException('User already exists');
-  //   }
-
-  //   // Create user
-  //   const user = await this.userService.create({
-  //     email: temporaryUserData.email,
-  //     password: temporaryUserData.password,
-  //     name: temporaryUserData.name,
-  //     role: temporaryUserData.role,
-  //   });
-
-  //   // Generate tokens
-  //   const tokens = await this.generateTokens(user.id, user.email, user.role);
-
-  //   return {
-  //     ...tokens,
-  //     user: {
-  //       id: user.id,
-  //       email: user.email,
-  //       name: user.name,
-  //       role: user.role,
-  //     },
-  //   };
-  // }
+    if (!otpResult) {
+      throw new BadRequestException('Invalid OTP');
+    }
+    // Mark user as verified
+    await this.userService.markAsVerified(userData.id);
+    return {
+      message: 'User verified successfully',
+    };
+  }
 
   async login(loginDto: LoginDto): Promise<AuthResponse> {
     const { email, password } = loginDto;

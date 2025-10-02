@@ -452,6 +452,31 @@ export class UserService {
       throw error;
     }
   }
+  async markAsVerified(id: string) {
+    try {
+      this.logger.log(`Marking user with ID: ${id} as verified`, 'UserService');
+      // First check if user exists
+      await this.findUserById(id);
+      await this.db
+        .update(schema.UserTable)
+        .set({ verifiedAt: new Date() })
+        .where(eq(schema.UserTable.id, id));
+      this.logger.log(
+        `User marked as verified successfully with ID: ${id}`,
+        'UserService',
+      );
+    } catch (error) {
+      if (error instanceof ResourceNotFoundException) {
+        throw error;
+      }
+      this.logger.error(
+        `Failed to mark user with ID: ${id} as verified`,
+        (error as Error).stack,
+        'UserService',
+      );
+      throw error;
+    }
+  }
 
   async findById(id: string) {
     return this.findOne(id);
