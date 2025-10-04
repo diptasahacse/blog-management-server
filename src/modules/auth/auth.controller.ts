@@ -5,6 +5,7 @@ import {
   UseGuards,
   Get,
   Patch,
+  BadRequestException,
   // Query,
 } from '@nestjs/common';
 import { AuthService } from './auth.service';
@@ -41,7 +42,7 @@ export class AuthController {
     if (dto.purpose === OtpPurposeEnum.REGISTER) {
       return this.authService.verifyRegistrationOtp(dto);
     }
-    throw new Error('Unsupported OTP purpose');
+    throw new BadRequestException('Invalid OTP purpose');
   }
 
   @UseGuards(LocalAuthGuard)
