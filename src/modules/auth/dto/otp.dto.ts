@@ -1,6 +1,7 @@
 import { IsEmail, IsEnum, IsOptional, IsUUID, Length } from 'class-validator';
 import { OtpChannelEnum, OtpPurposeEnum } from '../enums/otp.enum';
 import { OmitType } from '@nestjs/mapped-types';
+import config from 'src/config';
 export class GenerateOtpDto {
   @IsUUID()
   userId: string;
@@ -16,7 +17,7 @@ export class VerifyOtpDto {
   @IsUUID()
   userId: string;
 
-  @Length(6, 6)
+  @Length(config.otp.OTP_LENGTH, config.otp.OTP_LENGTH)
   otpCode: string;
 
   @IsEnum(OtpPurposeEnum)

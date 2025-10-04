@@ -2,6 +2,7 @@ import {
   Injectable,
   UnauthorizedException,
   BadRequestException,
+  ConflictException,
 } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
@@ -20,6 +21,7 @@ import { OtpChannelEnum, OtpPurposeEnum } from './enums/otp.enum';
 import { NotificationService } from '../notification/notification.service';
 import { NotificationChannelEnum } from '../notification/enum/notification-channel.enum';
 import { VerifyOtpRegistrationDto } from './dto/otp.dto';
+import config from 'src/config';
 
 interface User {
   id: string;
@@ -39,89 +41,29 @@ export class AuthService {
     private notificationService: NotificationService,
   ) {}
 
-  async register(
-    registerDto: RegisterDto,
-  ): Promise<{ message: string; email: string }> {
+  async register(registerDto: RegisterDto): Promise<{ message: string }> {
     const { email, password, name } = registerDto;
 
-    // // Define unique fields to check
-    // const uniqueFields: UniqueField[] = [
-    //   {
-    //     field: 'email',
-    //     value: email,
-    //     message: 'User with this email already exists',
-    //   },
-    //   // You can easily add more unique fields here:
-    //   {
-    //     field: 'username',
-    //     value: name,
-    //     message: 'Username is already taken',
-    //   },
-    //   // {
-    //   //   field: 'phone',
-    //   //   value: phone,
-    //   //   message: 'Phone number is already registered',
-    //   // },
-    // ];
-
-    // // Define corresponding check functions
-    // const checkFunctions = [
-    //   async (emailValue: string) => {
-    //     const existingUser = await this.userService.findByEmail(emailValue);
-    //     return !!existingUser;
-    //   },
-    //   // Add more check functions for other unique fields:
-    //   // async (usernameValue: string) => {
-    //   //   const existingUser = await this.userService.findByUsername(usernameValue);
-    //   //   return !!existingUser;
-    //   // },
-    //   // async (phoneValue: string) => {
-    //   //   const existingUser = await this.userService.findByPhone(phoneValue);
-    //   //   return !!existingUser;
-    //   // },
-    // ];
-
-    // // Check for conflicts and throw if any exist
-    // await ConflictChecker.checkAndThrowConflicts(uniqueFields, checkFunctions);
-
-    // Check if user already exists and is verified
+    // 1. Check if email is already exists or not
     const existingUser = await this.userService.findByEmail(email);
-    if (existingUser && existingUser.verifiedAt) {
-      throw new BadRequestException(
-        'User with this email is already registered',
-      );
-    }
 
-    // If user exists but is not verified, we can choose to resend OTP or update details
     if (existingUser) {
-      const otpCode = await this.otpService.generateOTP({
-        purpose: OtpPurposeEnum.REGISTER,
-        channel: OtpChannelEnum.EMAIL,
-        userId: existingUser.id,
-      });
-      await this.notificationService.sendNotification({
-        channel: NotificationChannelEnum.EMAIL,
-        email: {
-          to: existingUser.email,
-          subject: 'Verify your email address',
-          template: 'verify-email',
-          context: {
-            name: existingUser.name,
-            otpCode: otpCode,
-            year: new Date().getFullYear(),
-          },
-        },
-      });
-      return {
-        message:
-          'User is registered but not verified. A new verification link has been sent to your email.',
-        email,
-      };
+      // If user exists but is not verified, then throw exception to prompt for OTP resend
+      if (!existingUser.verifiedAt) {
+        throw new ConflictException(
+          'User already registered but not verified. Resend OTP.',
+        );
+      }
+      // If user exists and is verified, throw conflict exception
+      throw new ConflictException('Email already in use.');
     }
 
+    // 2. Create new user
     // Hash password
-    const saltRounds = 12;
-    const hashedPassword = await bcrypt.hash(password, saltRounds);
+    const hashedPassword = await bcrypt.hash(
+      password,
+      config.password.SALT_ROUNDS,
+    );
     //  Store user data
     const user = await this.userService.create({
       name,
@@ -129,13 +71,14 @@ export class AuthService {
       password: hashedPassword,
     });
 
-    // Generate and store OTP
+    // 3. Generate, store and send OTP
+    //  Generate and store OTP
     const otpCode = await this.otpService.generateOTP({
       purpose: OtpPurposeEnum.REGISTER,
       channel: OtpChannelEnum.EMAIL,
       userId: user.id,
     });
-
+    // Send OTP to user
     await this.notificationService.sendNotification({
       channel: NotificationChannelEnum.EMAIL,
       email: {
@@ -149,11 +92,8 @@ export class AuthService {
         },
       },
     });
-
     return {
-      message:
-        'Registration initiated. Please check your email for verification link.',
-      email,
+      message: 'Registration successful. Check email for OTP.',
     };
   }
 
@@ -293,3 +233,42 @@ export class AuthService {
     };
   }
 }
+// // Define unique fields to check
+// const uniqueFields: UniqueField[] = [
+//   {
+//     field: 'email',
+//     value: email,
+//     message: 'User with this email already exists',
+//   },
+//   // You can easily add more unique fields here:
+//   {
+//     field: 'username',
+//     value: name,
+//     message: 'Username is already taken',
+//   },
+//   // {
+//   //   field: 'phone',
+//   //   value: phone,
+//   //   message: 'Phone number is already registered',
+//   // },
+// ];
+
+// // Define corresponding check functions
+// const checkFunctions = [
+//   async (emailValue: string) => {
+//     const existingUser = await this.userService.findByEmail(emailValue);
+//     return !!existingUser;
+//   },
+//   // Add more check functions for other unique fields:
+//   // async (usernameValue: string) => {
+//   //   const existingUser = await this.userService.findByUsername(usernameValue);
+//   //   return !!existingUser;
+//   // },
+//   // async (phoneValue: string) => {
+//   //   const existingUser = await this.userService.findByPhone(phoneValue);
+//   //   return !!existingUser;
+//   // },
+// ];
+
+// // Check for conflicts and throw if any exist
+// await ConflictChecker.checkAndThrowConflicts(uniqueFields, checkFunctions);

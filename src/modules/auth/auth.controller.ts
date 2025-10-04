@@ -18,6 +18,7 @@ import { RolesGuard } from './guards/roles.guard';
 import { GetUser } from './decorators/get-user.decorator';
 import { Roles } from './decorators/roles.decorator';
 import { VerifyOtpRegistrationDto } from './dto/otp.dto';
+import { OtpPurposeEnum } from './enums/otp.enum';
 
 interface AuthenticatedUser {
   id: string;
@@ -34,9 +35,13 @@ export class AuthController {
     return this.authService.register(registerDto);
   }
 
-  @Post('verify-otp')
-  async verifyOtp(@Body() dto: VerifyOtpRegistrationDto) {
-    return this.authService.verifyRegistrationOtp(dto);
+  @Post('verify-email')
+  async verifyEmail(@Body() dto: VerifyOtpRegistrationDto) {
+    // Register
+    if (dto.purpose === OtpPurposeEnum.REGISTER) {
+      return this.authService.verifyRegistrationOtp(dto);
+    }
+    throw new Error('Unsupported OTP purpose');
   }
 
   @UseGuards(LocalAuthGuard)

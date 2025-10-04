@@ -6,8 +6,8 @@ import * as schema from '../../../core/database/schemas';
 import { OtpTable } from '../../../core/database/schemas/otp.schema';
 import { GenerateOtpDto, VerifyOtpDto } from '../dto/otp.dto';
 import { OtpStatusEnum } from '../enums/otp.enum';
-import { MAX_OTP_RETRY, OTP_EXPIRY_MINUTES } from '../constant/otp';
-
+import crypto from 'crypto';
+import config from 'src/config';
 export interface OtpVerificationResult {
   isValid: boolean;
   email?: string;
@@ -17,8 +17,8 @@ export interface OtpVerificationResult {
 
 @Injectable()
 export class OtpService {
-  private readonly otpExpiry = OTP_EXPIRY_MINUTES * 60 * 1000; // OTP expiry time in milliseconds
-  private readonly maxRetry = MAX_OTP_RETRY; // Max retry attempts
+  private readonly otpExpiry = config.otp.OTP_EXPIRY_MINUTES * 60 * 1000; // OTP expiry time in milliseconds
+  private readonly maxRetry = config.otp.MAX_OTP_RETRY; // Max retry attempts
   constructor(
     @Inject(DrizzleProvider)
     private readonly db: NodePgDatabase<typeof schema>,
@@ -27,8 +27,21 @@ export class OtpService {
   /**
    * Generate a 6-digit OTP code
    */
-  private generateOtpCode(): string {
-    return Math.floor(100000 + Math.random() * 900000).toString();
+  private generateOtp(length = config.otp.OTP_LENGTH): string {
+    return crypto
+      .randomInt(0, Math.pow(10, length))
+      .toString()
+      .padStart(length, '0');
+  }
+
+  /**
+   * Hash OTP code
+   */
+  hashOtp(otp: string): string {
+    return crypto
+      .createHash(config.otp.HASHED_OTP_ALGORITHM)
+      .update(otp)
+      .digest('hex');
   }
 
   /**
@@ -51,13 +64,16 @@ export class OtpService {
         ),
       );
 
-    // Generate 6-digit code
-    const code = this.generateOtpCode();
+    // Generate OTP code
+    const code = this.generateOtp();
+
+    //  Hash OTP code
+    const hashedCode = this.hashOtp(code);
 
     // Create new OTP
     await this.db.insert(OtpTable).values({
       userId,
-      otpCode: code,
+      otpCode: hashedCode,
       purpose,
       channel,
       expireAt: new Date(Date.now() + this.otpExpiry),

@@ -25,7 +25,6 @@ export class NotificationService {
         if (!dto.email) {
           throw new BadRequestException('Email notification is required');
         }
-        console.log(dto);
         return await this.emailProvider.send(dto.email);
 
       //   case NotificationChannelEnum.WHATSAPP:

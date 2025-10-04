@@ -455,8 +455,6 @@ export class UserService {
   async markAsVerified(id: string) {
     try {
       this.logger.log(`Marking user with ID: ${id} as verified`, 'UserService');
-      // First check if user exists
-      await this.findUserById(id);
       await this.db
         .update(schema.UserTable)
         .set({ verifiedAt: new Date() })
