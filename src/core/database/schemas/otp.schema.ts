@@ -42,7 +42,7 @@ export const OtpTable = pgTable('otp', {
   status: otpStatusEnum('status').notNull().default(OtpStatusEnum.PENDING), // Status of the OTP
   expireAt: timestamp('expire_at', { withTimezone: true }).notNull(), // Expiry time
   channel: otpChannelEnum('channel').notNull().default(OtpChannelEnum.EMAIL), // Channel through which OTP is sent
-  retryCount: integer('retry_count').default(0), // Number of retry attempts
+  retryCount: integer('retry_count').notNull().default(0), // Number of retry attempts
   createdAt: timestamp('created_at').notNull().defaultNow(), // Creation timestamp
   updatedAt: timestamp('updated_at').notNull().defaultNow(), // Last update timestamp
 });

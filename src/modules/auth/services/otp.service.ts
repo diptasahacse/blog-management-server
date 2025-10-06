@@ -1,5 +1,5 @@
 import { Injectable, Inject, BadRequestException } from '@nestjs/common';
-import { eq, and } from 'drizzle-orm';
+import { eq, and, desc } from 'drizzle-orm';
 import { DrizzleProvider } from '../../../core/database';
 import { NodePgDatabase } from 'drizzle-orm/node-postgres';
 import * as schema from '../../../core/database/schemas';
@@ -90,14 +90,45 @@ export class OtpService {
       where: and(
         eq(OtpTable.userId, userId),
         eq(OtpTable.purpose, purpose),
-        eq(OtpTable.otpCode, otpCode),
         eq(OtpTable.channel, channel),
         eq(OtpTable.status, OtpStatusEnum.PENDING),
       ),
+      orderBy: [desc(OtpTable.createdAt)],
     });
+    //  If no OTP found, throw exception
     if (!otp) {
-      throw new BadRequestException('Invalid OTP');
+      throw new BadRequestException('No pending OTP found. Request a new one.');
     }
+
+    // Check max retry. If exceeded, block the OTP and throw exception
+    if (otp.retryCount >= config.otp.MAX_OTP_RETRY) {
+      await this.db
+        .update(OtpTable)
+        .set({ status: OtpStatusEnum.BLOCKED })
+        .where(eq(OtpTable.id, otp.id));
+      throw new BadRequestException('OTP blocked due to max retry attempts');
+    }
+
+    // Check if OTP is expired. If expired, expire the OTP and throw exception
+    if (new Date() > new Date(otp.expireAt)) {
+      await this.db
+        .update(OtpTable)
+        .set({ status: OtpStatusEnum.EXPIRED })
+        .where(eq(OtpTable.id, otp.id));
+      throw new BadRequestException('OTP expired. Request a new one.');
+    }
+    //  If Wrong OTP, increment retry count and throw exception
+    if (dto.otpCode !== otp.otpCode) {
+      await this.db
+        .update(OtpTable)
+        .set({ retryCount: otp.retryCount + 1 })
+        .where(eq(OtpTable.id, otp.id));
+      throw new BadRequestException(
+        `Wrong OTP. Attempt ${otp.retryCount + 1}/${config.otp.MAX_OTP_RETRY}`,
+      );
+    }
+    //  Next -------------------------------------
+
     if (otp.expireAt.getTime() < Date.now()) {
       // Expire the OTP
       await this.db
@@ -119,5 +150,15 @@ export class OtpService {
       .where(eq(OtpTable.id, otp.id));
 
     return true;
+  }
+
+  // Check if the provided OTP matches the hashed OTP
+  isValid(hashedOTP: string, plainOTP: string): boolean {
+    return (
+      crypto
+        .createHash(config.otp.HASHED_OTP_ALGORITHM)
+        .update(hashedOTP)
+        .digest('hex') === plainOTP
+    );
   }
 }

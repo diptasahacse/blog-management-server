@@ -117,8 +117,9 @@ export class AuthService {
       channel: channel,
     });
 
+    // If OTP is invalid, throw exception
     if (!otpResult) {
-      throw new BadRequestException('Invalid OTP');
+      throw new BadRequestException('Invalid OTP'); // Send a generic message
     }
     // Mark user as verified
     await this.userService.markAsVerified(userData.id);
