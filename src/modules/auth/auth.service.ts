@@ -20,7 +20,7 @@ import { OtpService } from './services/otp.service';
 import { OtpChannelEnum, OtpPurposeEnum } from './enums/otp.enum';
 import { NotificationService } from '../notification/notification.service';
 import { NotificationChannelEnum } from '../notification/enum/notification-channel.enum';
-import { VerifyOtpRegistrationDto } from './dto/otp.dto';
+import { VerifyOtpForRegistrationDto } from './dto/otp.dto';
 import config from 'src/config';
 
 interface User {
@@ -98,7 +98,7 @@ export class AuthService {
   }
 
   async verifyRegistrationOtp(
-    dto: VerifyOtpRegistrationDto,
+    dto: VerifyOtpForRegistrationDto,
   ): Promise<{ message: string }> {
     const { email, channel } = dto;
     const userData = await this.userService.findByEmail(email);

@@ -5,7 +5,6 @@ import {
   UseGuards,
   Get,
   Patch,
-  BadRequestException,
   // Query,
 } from '@nestjs/common';
 import { AuthService } from './auth.service';
@@ -18,8 +17,8 @@ import { JwtAuthGuard } from './guards/jwt-auth.guard';
 import { RolesGuard } from './guards/roles.guard';
 import { GetUser } from './decorators/get-user.decorator';
 import { Roles } from './decorators/roles.decorator';
-import { VerifyOtpRegistrationDto } from './dto/otp.dto';
-import { OtpPurposeEnum } from './enums/otp.enum';
+import { VerifyOtpForRegistrationDto } from './dto/otp.dto';
+import { Throttle, ThrottlerGuard } from '@nestjs/throttler';
 
 interface AuthenticatedUser {
   id: string;
@@ -36,13 +35,13 @@ export class AuthController {
     return this.authService.register(registerDto);
   }
 
-  @Post('verify-email')
-  async verifyEmail(@Body() dto: VerifyOtpRegistrationDto) {
-    // Register
-    if (dto.purpose === OtpPurposeEnum.REGISTER) {
-      return this.authService.verifyRegistrationOtp(dto);
-    }
-    throw new BadRequestException('Invalid OTP purpose');
+  @UseGuards(ThrottlerGuard)
+  @Throttle({
+    otp: {},
+  })
+  @Post('verify-registration')
+  async verifyRegistrationOtp(@Body() dto: VerifyOtpForRegistrationDto) {
+    return this.authService.verifyRegistrationOtp(dto);
   }
 
   @UseGuards(LocalAuthGuard)

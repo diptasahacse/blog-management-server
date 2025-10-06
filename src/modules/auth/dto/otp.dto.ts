@@ -29,8 +29,9 @@ export class VerifyOtpDto {
 }
 
 // Verify OTP for registration
-export class VerifyOtpRegistrationDto extends OmitType(VerifyOtpDto, [
+export class VerifyOtpForRegistrationDto extends OmitType(VerifyOtpDto, [
   'userId',
+  'purpose',
 ] as const) {
   @IsEmail()
   email: string;
