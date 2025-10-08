@@ -101,26 +101,24 @@ export class AuthService {
     dto: VerifyOtpForRegistrationDto,
   ): Promise<{ message: string }> {
     const { email, channel } = dto;
+    // 1️⃣ Find the user
     const userData = await this.userService.findByEmail(email);
     if (!userData) {
       throw new BadRequestException('User not found');
     }
+    // 2️⃣ Already verified?
     if (userData.verifiedAt) {
       throw new BadRequestException('User already verified');
     }
 
-    // Verify OTP
-    const otpResult = await this.otpService.verifyOTP({
+    // 3️⃣ Verify OTP
+    await this.otpService.verifyOTP({
       userId: userData.id,
       otpCode: dto.otpCode,
       purpose: OtpPurposeEnum.REGISTER,
       channel: channel,
     });
 
-    // If OTP is invalid, throw exception
-    if (!otpResult) {
-      throw new BadRequestException('Invalid OTP'); // Send a generic message
-    }
     // Mark user as verified
     await this.userService.markAsVerified(userData.id);
     return {

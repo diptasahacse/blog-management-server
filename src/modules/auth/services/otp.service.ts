@@ -8,6 +8,7 @@ import { GenerateOtpDto, VerifyOtpDto } from '../dto/otp.dto';
 import { OtpStatusEnum } from '../enums/otp.enum';
 import crypto from 'crypto';
 import config from 'src/config';
+import * as bcrypt from 'bcrypt';
 export interface OtpVerificationResult {
   isValid: boolean;
   email?: string;
@@ -25,23 +26,20 @@ export class OtpService {
   ) {}
 
   /**
-   * Generate a 6-digit OTP code
+   * Generate a N-digit OTP code
    */
-  private generateOtp(length = config.otp.OTP_LENGTH): string {
+  private generateNDigitOtp(): string {
     return crypto
-      .randomInt(0, Math.pow(10, length))
+      .randomInt(0, Math.pow(10, config.otp.OTP_LENGTH))
       .toString()
-      .padStart(length, '0');
+      .padStart(config.otp.OTP_LENGTH, '0');
   }
 
   /**
    * Hash OTP code
    */
-  hashOtp(otp: string): string {
-    return crypto
-      .createHash(config.otp.HASHED_OTP_ALGORITHM)
-      .update(otp)
-      .digest('hex');
+  async hashedOtp(otp: string): Promise<string> {
+    return await bcrypt.hash(otp, config.otp.SALT_ROUND);
   }
 
   /**
@@ -65,10 +63,10 @@ export class OtpService {
       );
 
     // Generate OTP code
-    const code = this.generateOtp();
+    const code = this.generateNDigitOtp();
 
     //  Hash OTP code
-    const hashedCode = this.hashOtp(code);
+    const hashedCode = await this.hashedOtp(code);
 
     // Create new OTP
     await this.db.insert(OtpTable).values({
@@ -97,7 +95,7 @@ export class OtpService {
     });
     //  If no OTP found, throw exception
     if (!otp) {
-      throw new BadRequestException('No pending OTP found. Request a new one.');
+      throw new BadRequestException('No OTP found. Request a new one.');
     }
 
     // Check max retry. If exceeded, block the OTP and throw exception
@@ -118,7 +116,8 @@ export class OtpService {
       throw new BadRequestException('OTP expired. Request a new one.');
     }
     //  If Wrong OTP, increment retry count and throw exception
-    if (dto.otpCode !== otp.otpCode) {
+    const validOTP = await this.isValidOTP(otpCode, otp.otpCode);
+    if (!validOTP) {
       await this.db
         .update(OtpTable)
         .set({ retryCount: otp.retryCount + 1 })
@@ -127,38 +126,19 @@ export class OtpService {
         `Wrong OTP. Attempt ${otp.retryCount + 1}/${config.otp.MAX_OTP_RETRY}`,
       );
     }
-    //  Next -------------------------------------
-
-    if (otp.expireAt.getTime() < Date.now()) {
-      // Expire the OTP
-      await this.db
-        .update(OtpTable)
-        .set({ status: OtpStatusEnum.EXPIRED })
-        .where(eq(OtpTable.id, otp.id));
-      throw new BadRequestException('OTP has expired');
-    }
-    //
-    const isMatch = otp.otpCode === otpCode;
-    if (!isMatch) {
-      throw new BadRequestException('Invalid OTP');
-    }
-
-    // ✅ OTP successful হলে update করো
+    //  If OTP is correct, mark it as USED
     await this.db
       .update(OtpTable)
-      .set({ status: OtpStatusEnum.USED, updatedAt: new Date() })
+      .set({
+        status: OtpStatusEnum.USED,
+      })
       .where(eq(OtpTable.id, otp.id));
 
     return true;
   }
 
   // Check if the provided OTP matches the hashed OTP
-  isValid(hashedOTP: string, plainOTP: string): boolean {
-    return (
-      crypto
-        .createHash(config.otp.HASHED_OTP_ALGORITHM)
-        .update(hashedOTP)
-        .digest('hex') === plainOTP
-    );
+  async isValidOTP(plainOTP: string, hashedOTP: string): Promise<boolean> {
+    return await bcrypt.compare(plainOTP, hashedOTP);
   }
 }
