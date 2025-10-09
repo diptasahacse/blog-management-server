@@ -5,9 +5,8 @@ const config = {
   otp: {
     MAX_OTP_RETRY: 3,
     OTP_EXPIRY_MINUTES: 15,
-    HASHED_OTP_ALGORITHM: 'sha256',
     OTP_LENGTH: 6,
-    SALT_ROUND : 10
+    SALT_ROUND: 10,
   },
   rateLimit: {
     default: {
