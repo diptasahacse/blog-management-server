@@ -112,15 +112,21 @@ export class AuthService {
     }
 
     // 3️⃣ Verify OTP
-    await this.otpService.verifyOTP({
+    const isValid = await this.otpService.verifyOTP({
       userId: userData.id,
       otpCode: dto.otpCode,
       purpose: OtpPurposeEnum.REGISTER,
       channel: channel,
     });
 
-    // Mark user as verified
+    // 4️⃣ Invalid OTP
+    if (!isValid) {
+      throw new BadRequestException('Invalid OTP');
+    }
+
+    // 5️⃣ Mark user as verified
     await this.userService.markAsVerified(userData.id);
+
     return {
       message: 'User verified successfully',
     };

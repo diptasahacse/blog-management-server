@@ -11,7 +11,7 @@ export class GenerateOtpDto {
 
   @IsOptional()
   @IsEnum(OtpChannelEnum)
-  channel: OtpChannelEnum = OtpChannelEnum.EMAIL;
+  channel: OtpChannelEnum;
 }
 export class VerifyOtpDto {
   @IsUUID()
