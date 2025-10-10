@@ -27,12 +27,12 @@ CREATE TABLE "profiles" (
 CREATE TABLE "otp" (
 	"id" serial PRIMARY KEY NOT NULL,
 	"userId" uuid NOT NULL,
-	"code" varchar(6) NOT NULL,
+	"code" varchar(255) NOT NULL,
 	"purpose" "otp_purpose" NOT NULL,
 	"status" "otp_status" DEFAULT 'pending' NOT NULL,
 	"expire_at" timestamp with time zone NOT NULL,
 	"channel" "otp_channel" DEFAULT 'email' NOT NULL,
-	"retry_count" integer DEFAULT 0,
+	"retry_count" integer DEFAULT 0 NOT NULL,
 	"created_at" timestamp DEFAULT now() NOT NULL,
 	"updated_at" timestamp DEFAULT now() NOT NULL
 );

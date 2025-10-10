@@ -37,7 +37,9 @@ export const OtpTable = pgTable('otp', {
   userId: uuid()
     .references(() => UserTable.id, { onDelete: 'cascade' })
     .notNull(), // Reference to User table
-  otpCode: varchar('code', { length: 6 }).notNull(), // 6-digit OTP code
+  otpCode: varchar('code', {
+    length: 255,
+  }).notNull(), // Hashed OTP code
   purpose: otpPurposeEnum('purpose').notNull(), // Purpose of the OTP
   status: otpStatusEnum('status').notNull().default(OtpStatusEnum.PENDING), // Status of the OTP
   expireAt: timestamp('expire_at', { withTimezone: true }).notNull(), // Expiry time
