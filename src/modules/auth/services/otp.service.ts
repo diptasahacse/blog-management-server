@@ -5,7 +5,11 @@ import { NodePgDatabase } from 'drizzle-orm/node-postgres';
 import * as schema from '../../../core/database/schemas';
 import { OtpTable } from '../../../core/database/schemas/otp.schema';
 import { GenerateOtpDto, VerifyOtpDto } from '../dto/otp.dto';
-import { OtpPurposeEnum, OtpStatusEnum } from '../enums/otp.enum';
+import {
+  OtpChannelEnum,
+  OtpPurposeEnum,
+  OtpStatusEnum,
+} from '../enums/otp.enum';
 import crypto from 'crypto';
 import config from 'src/config';
 import * as bcrypt from 'bcrypt';
@@ -48,7 +52,7 @@ export class OtpService {
       resendIntervalSeconds = config.otp.MIN_RESEND_INTERVAL_SECONDS;
     }
 
-    return resendIntervalSeconds * 1000;
+    return resendIntervalSeconds * 1000; // Convert to milliseconds
   }
 
   /**
@@ -56,6 +60,12 @@ export class OtpService {
    */
   async generateOTP(createOtpDto: GenerateOtpDto): Promise<string> {
     const { purpose, channel, userId } = createOtpDto;
+    //!! Todo: Currently we support email channel only. Add more channels if needed
+    if (channel !== OtpChannelEnum.EMAIL) {
+      throw new BadRequestException(
+        'Invalid OTP channel. Only email is supported currently.',
+      );
+    }
 
     // 1️⃣ Check if user already has a pending OTP for the same purpose and channel
     const lastOtp = await this.db.query.OtpTable.findFirst({
@@ -112,6 +122,13 @@ export class OtpService {
   // Verify OTP
   async verifyOTP(dto: VerifyOtpDto): Promise<boolean> {
     const { userId, otpCode, purpose, channel } = dto;
+
+    //!! Todo: Currently we support email channel only. Add more channels if needed
+    if (channel !== OtpChannelEnum.EMAIL) {
+      throw new BadRequestException(
+        'Invalid OTP channel. Only email is supported currently.',
+      );
+    }
 
     // 1️⃣ Fetch latest pending OTP for this user with purpose, and channel
     const otp = await this.db.query.OtpTable.findFirst({

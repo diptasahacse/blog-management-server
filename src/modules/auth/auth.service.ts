@@ -20,7 +20,10 @@ import { OtpService } from './services/otp.service';
 import { OtpChannelEnum, OtpPurposeEnum } from './enums/otp.enum';
 import { NotificationService } from '../notification/notification.service';
 import { NotificationChannelEnum } from '../notification/enum/notification-channel.enum';
-import { VerifyOtpForRegistrationDto } from './dto/otp.dto';
+import {
+  ResendOtpForRegistrationDto,
+  VerifyOtpForRegistrationDto,
+} from './dto/otp.dto';
 import config from 'src/config';
 
 interface User {
@@ -101,11 +104,9 @@ export class AuthService {
     dto: VerifyOtpForRegistrationDto,
   ): Promise<{ message: string }> {
     const { email, channel } = dto;
-    // 1️⃣ Find the user
-    const userData = await this.userService.findByEmail(email);
-    if (!userData) {
-      throw new BadRequestException('User not found');
-    }
+    // 1️⃣ Find the user by email or throw error if not found
+    const userData = await this.userService.getUserOrFailByEmail(email);
+
     // 2️⃣ Already verified?
     if (userData.verifiedAt) {
       throw new BadRequestException('User already verified');
@@ -130,6 +131,39 @@ export class AuthService {
     return {
       message: 'User verified successfully',
     };
+  }
+
+  async resendRegistrationOtp(dto: ResendOtpForRegistrationDto) {
+    const { email, channel } = dto;
+    // 1️⃣ Find the user by email or throw error if not found
+    const userData = await this.userService.getUserOrFailByEmail(email);
+    // 2️⃣ Already verified?
+    if (userData.verifiedAt) {
+      throw new BadRequestException('User already verified');
+    }
+    // 3️⃣ Generate OTP - Generate new OTP (OtpService will handle rate-limit & old OTP expiry)
+    const otpCode = await this.otpService.generateOTP({
+      userId: userData.id,
+      purpose: OtpPurposeEnum.REGISTER, // or LOGIN, PASSWORD_RESET, etc.
+      channel,
+    });
+
+    // 3️⃣ Send OTP (you can integrate SMS/email here)
+    await this.notificationService.sendNotification({
+      channel: NotificationChannelEnum.EMAIL,
+      email: {
+        to: userData.email,
+        subject: 'Verify your email address',
+        template: 'verify-email',
+        context: {
+          name: userData.name,
+          otpCode: otpCode,
+          year: new Date().getFullYear(),
+        },
+      },
+    });
+
+    return { message: 'OTP resent successfully' };
   }
 
   async login(loginDto: LoginDto): Promise<AuthResponse> {

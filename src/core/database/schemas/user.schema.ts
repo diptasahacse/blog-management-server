@@ -13,6 +13,14 @@ export const UserTable = pgTable('users', {
   password: varchar('password', { length: 255 }).notNull(),
   role: userRoleEnum('role').notNull().default(UserRoleEnum.USER),
   verifiedAt: timestamp('verified_at'),
-  createdAt: timestamp('created_at').notNull().defaultNow(),
-  updatedAt: timestamp('updated_at').notNull().defaultNow(),
+  createdAt: timestamp('created_at', {
+    withTimezone: true,
+  })
+    .notNull()
+    .defaultNow(), // Creation timestamp
+  updatedAt: timestamp('updated_at', {
+    withTimezone: true,
+  })
+    .notNull()
+    .defaultNow(), // Last update timestamp
 });

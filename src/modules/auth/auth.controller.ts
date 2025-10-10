@@ -17,7 +17,10 @@ import { JwtAuthGuard } from './guards/jwt-auth.guard';
 import { RolesGuard } from './guards/roles.guard';
 import { GetUser } from './decorators/get-user.decorator';
 import { Roles } from './decorators/roles.decorator';
-import { VerifyOtpForRegistrationDto } from './dto/otp.dto';
+import {
+  ResendOtpForRegistrationDto,
+  VerifyOtpForRegistrationDto,
+} from './dto/otp.dto';
 import { Throttle, ThrottlerGuard } from '@nestjs/throttler';
 
 interface AuthenticatedUser {
@@ -42,6 +45,14 @@ export class AuthController {
   @Post('verify-registration')
   async verifyRegistrationOtp(@Body() dto: VerifyOtpForRegistrationDto) {
     return this.authService.verifyRegistrationOtp(dto);
+  }
+  @UseGuards(ThrottlerGuard)
+  @Throttle({
+    otp: {},
+  })
+  @Post('resend-registration-otp')
+  async resendRegistrationOtp(@Body() dto: ResendOtpForRegistrationDto) {
+    return this.authService.resendRegistrationOtp(dto);
   }
 
   @UseGuards(LocalAuthGuard)

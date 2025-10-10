@@ -15,6 +15,14 @@ export const ProfileTable = pgTable('profiles', {
     .unique(), // Ensure one-to-one relationship
   avatar: varchar('avatar', { length: 255 }),
   bio: text('bio'),
-  createdAt: timestamp('created_at').notNull().defaultNow(),
-  updatedAt: timestamp('updated_at').notNull().defaultNow(),
+  createdAt: timestamp('created_at', {
+    withTimezone: true,
+  })
+    .notNull()
+    .defaultNow(), // Creation timestamp
+  updatedAt: timestamp('updated_at', {
+    withTimezone: true,
+  })
+    .notNull()
+    .defaultNow(), // Last update timestamp
 });

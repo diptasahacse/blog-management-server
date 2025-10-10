@@ -13,6 +13,7 @@ export class GenerateOtpDto {
   @IsEnum(OtpChannelEnum)
   channel: OtpChannelEnum;
 }
+// Verify OTP
 export class VerifyOtpDto {
   @IsUUID()
   userId: string;
@@ -23,15 +24,23 @@ export class VerifyOtpDto {
   @IsEnum(OtpPurposeEnum)
   purpose: OtpPurposeEnum;
 
-  @IsOptional()
   @IsEnum(OtpChannelEnum)
-  channel: OtpChannelEnum = OtpChannelEnum.EMAIL;
+  channel: OtpChannelEnum;
 }
 
 // Verify OTP for registration
 export class VerifyOtpForRegistrationDto extends OmitType(VerifyOtpDto, [
   'userId',
   'purpose',
+] as const) {
+  @IsEmail()
+  email: string;
+}
+// Resend OTP for registration
+export class ResendOtpForRegistrationDto extends OmitType(VerifyOtpDto, [
+  'userId',
+  'purpose',
+  'otpCode',
 ] as const) {
   @IsEmail()
   email: string;

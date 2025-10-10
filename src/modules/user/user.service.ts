@@ -1,4 +1,4 @@
-import { Inject, Injectable } from '@nestjs/common';
+import { BadRequestException, Inject, Injectable } from '@nestjs/common';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
 import { FindUsersDto, UserSortField } from './dto/find-users.dto';
@@ -451,6 +451,16 @@ export class UserService {
       );
       throw error;
     }
+  }
+  /**
+   * Find a user by email or throw error if not found
+   */
+  async getUserOrFailByEmail(email: string) {
+    const user = await this.findByEmail(email);
+    if (!user) {
+      throw new BadRequestException('User not found');
+    }
+    return user;
   }
   async markAsVerified(id: string) {
     try {
