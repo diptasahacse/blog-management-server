@@ -5,6 +5,8 @@ import {
   UseGuards,
   Get,
   Patch,
+  Param,
+  BadRequestException,
   // Query,
 } from '@nestjs/common';
 import { AuthService } from './auth.service';
@@ -18,10 +20,13 @@ import { RolesGuard } from './guards/roles.guard';
 import { GetUser } from './decorators/get-user.decorator';
 import { Roles } from './decorators/roles.decorator';
 import {
-  ResendOtpForRegistrationDto,
-  VerifyOtpForRegistrationDto,
+  VerifyOtpRequestBodyDTO,
+  VerifyOtpParamsDTO,
+  VerifyRequestBodyDTO,
+  SendOtpParamsDTO,
 } from './dto/otp.dto';
 import { Throttle, ThrottlerGuard } from '@nestjs/throttler';
+import { OtpPurposeEnum } from './enums/otp.enum';
 
 interface AuthenticatedUser {
   id: string;
@@ -42,19 +47,46 @@ export class AuthController {
   @Throttle({
     otp: {},
   })
-  @Post('verify-registration')
-  async verifyRegistrationOtp(@Body() dto: VerifyOtpForRegistrationDto) {
-    return this.authService.verifyRegistrationOtp(dto);
+  @Post('verify-otp/:purpose/:channel/:code')
+  verifyOTP(
+    @Body() dto: VerifyOtpRequestBodyDTO,
+    @Param() params: VerifyOtpParamsDTO,
+  ) {
+    const { channel, purpose, code } = params;
+    const { email } = dto;
+    switch (purpose) {
+      case OtpPurposeEnum.REGISTER:
+        return this.authService.verifyRegistrationOtp({
+          email,
+          channel,
+          otpCode: code,
+        });
+      default:
+        throw new BadRequestException('Invalid purpose or not supported yet');
+    }
   }
+
   @UseGuards(ThrottlerGuard)
   @Throttle({
     otp: {},
   })
-  @Post('resend-registration-otp')
-  async resendRegistrationOtp(@Body() dto: ResendOtpForRegistrationDto) {
-    return this.authService.resendRegistrationOtp(dto);
+  @Post('send-otp/:purpose/:channel')
+  async resendRegistrationOtp(
+    @Body() dto: VerifyRequestBodyDTO,
+    @Param() params: SendOtpParamsDTO,
+  ) {
+    const { channel, purpose } = params;
+    const { email } = dto;
+    switch (purpose) {
+      case OtpPurposeEnum.REGISTER:
+        return this.authService.resendRegistrationOtp({
+          email,
+          channel,
+        });
+      default:
+        throw new BadRequestException('Invalid purpose or not supported yet');
+    }
   }
-
   @UseGuards(LocalAuthGuard)
   @Post('login')
   async login(@Body() loginDto: LoginDto) {

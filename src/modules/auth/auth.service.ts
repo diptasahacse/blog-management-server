@@ -103,7 +103,7 @@ export class AuthService {
   async verifyRegistrationOtp(
     dto: VerifyOtpForRegistrationDto,
   ): Promise<{ message: string }> {
-    const { email, channel } = dto;
+    const { email, channel, otpCode } = dto;
     // 1️⃣ Find the user by email or throw error if not found
     const userData = await this.userService.getUserOrFailByEmail(email);
 
@@ -115,7 +115,7 @@ export class AuthService {
     // 3️⃣ Verify OTP
     const isValid = await this.otpService.verifyOTP({
       userId: userData.id,
-      otpCode: dto.otpCode,
+      otpCode: otpCode,
       purpose: OtpPurposeEnum.REGISTER,
       channel: channel,
     });
